@@ -1,0 +1,32 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src') // 保留原有别名配置
+    }
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: '@import "@/assets/scss/variables.scss";' // 保留SCSS全局变量
+      }
+    }
+  },
+  server: {
+    port: parseInt(process.env.FRONTEND_PORT || '5174'), // 默认5174，支持环境变量切换
+    strictPort: true, // 端口被占用时直接报错，不自动切换（避免混乱）
+    
+    proxy: {
+      '/api': {
+        // 动态指向后端端口，支持BACKEND_PORT环境变量，默认9090
+        target: `http://127.0.0.1:${process.env.BACKEND_PORT || '9090'}`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '') // 保留原有rewrite逻辑
+      }
+    }
+  }
+})
