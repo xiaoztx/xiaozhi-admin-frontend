@@ -174,21 +174,20 @@ const handleLogout = async () => {
 .admin-header {
   position: relative;
   height: var(--header-height);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 0 var(--space-6);
+  box-shadow: var(--shadow-sm);
   z-index: 100;
 
-  // 深色主题样式
+  // 企业级深色主题
   .dark & {
-    background: rgba(17, 24, 39, 0.95);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: var(--bg-primary);
+    border-bottom-color: var(--border-light);
+    box-shadow: var(--shadow-sm);
   }
 
   .mobile-menu-btn {
@@ -206,7 +205,7 @@ const handleLogout = async () => {
     color: var(--text-secondary);
 
     &:hover {
-      background-color: var(--nav-item-hover);
+      background-color: var(--bg-tertiary);
       color: var(--text-primary);
       transform: scale(1.05);
     }
@@ -249,7 +248,7 @@ const handleLogout = async () => {
     }
 
     &:hover {
-      background-color: var(--nav-item-hover);
+      background-color: var(--bg-tertiary);
       color: var(--text-primary);
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -292,108 +291,41 @@ const handleLogout = async () => {
 
   .breadcrumb {
     flex: 1;
-    margin: 0 24px;
+    margin: 0 var(--space-4);
     display: flex;
     align-items: center;
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: -12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 2px;
-      height: 20px;
-      background: linear-gradient(135deg, var(--color-primary), rgba(64, 158, 255, 0.3));
-      border-radius: 1px;
-      opacity: 0.6;
-    }
 
     :deep(.el-breadcrumb) {
-      font-size: 14px;
-      line-height: 1.2;
+      font-size: var(--font-size-sm);
+      line-height: 1.4;
 
       .el-breadcrumb__item {
         display: flex;
         align-items: center;
-        animation: fadeInUp 0.3s ease-out;
-        animation-fill-mode: both;
-
-        &:nth-child(1) { animation-delay: 0s; }
-        &:nth-child(2) { animation-delay: 0.1s; }
-        &:nth-child(3) { animation-delay: 0.2s; }
 
         .el-breadcrumb__link {
           color: var(--text-secondary);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          padding: 6px 12px;
-          border-radius: 8px;
-          font-weight: 500;
-          position: relative;
-          overflow: hidden;
-
-          &::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.1), transparent);
-            transition: left 0.5s ease;
-          }
+          transition: color var(--transition-fast);
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+          font-weight: var(--font-weight-medium);
 
           &:hover {
             color: var(--text-primary);
-            background-color: var(--nav-item-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
-            &::before {
-              left: 100%;
-            }
-          }
-
-          &:active {
-            transform: translateY(0);
+            background-color: var(--bg-tertiary);
           }
         }
 
         &:last-child .el-breadcrumb__link {
           color: var(--text-primary);
-          font-weight: 600;
-          background: linear-gradient(135deg, rgba(64, 158, 255, 0.15), rgba(64, 158, 255, 0.08));
-          border: 1px solid rgba(64, 158, 255, 0.2);
-          box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
-
-          &:hover {
-            background: linear-gradient(135deg, rgba(64, 158, 255, 0.25), rgba(64, 158, 255, 0.15));
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(64, 158, 255, 0.25);
-          }
+          font-weight: var(--font-weight-semibold);
+          background-color: var(--bg-tertiary);
         }
 
         .el-breadcrumb__separator {
           margin: 0 6px;
           color: var(--text-tertiary);
-          font-weight: 200;
-          font-size: 12px;
-          opacity: 0.6;
-          position: relative;
-
-          &::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 4px;
-            height: 4px;
-            background: var(--text-tertiary);
-            border-radius: 50%;
-            opacity: 0.3;
-          }
+          font-size: var(--font-size-xs);
         }
       }
     }
@@ -402,42 +334,37 @@ const handleLogout = async () => {
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-1);
 
     .theme-btn {
       width: 40px;
       height: 40px;
       background: none;
       border: none;
-      border-radius: 10px;
+      border-radius: var(--radius-md);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s ease;
+      transition: all var(--transition-fast);
       color: var(--text-secondary);
 
       &:hover {
-        background-color: var(--nav-item-hover);
+        background-color: var(--bg-tertiary);
         color: var(--text-primary);
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
       }
 
       .el-icon {
-        font-size: 20px;
+        font-size: 18px;
       }
     }
 
     .notification-dropdown {
       .notification-badge {
         :deep(.el-badge__content) {
-          background: linear-gradient(135deg, var(--color-danger), #ff6b6b);
-          border: 2px solid rgba(255, 255, 255, 0.9);
-          box-shadow: 0 2px 8px rgba(245, 108, 108, 0.3);
+          background: var(--color-danger);
+          border: 2px solid var(--bg-primary);
+          box-shadow: var(--shadow-sm);
         }
       }
 
@@ -446,46 +373,21 @@ const handleLogout = async () => {
         height: 40px;
         background: none;
         border: none;
-        border-radius: 10px;
+        border-radius: var(--radius-md);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.3s ease;
+        transition: all var(--transition-fast);
         color: var(--text-secondary);
-        position: relative;
-
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: radial-gradient(circle, rgba(64, 158, 255, 0.1) 0%, transparent 70%);
-          opacity: 0;
-          border-radius: inherit;
-          transition: opacity 0.3s ease;
-        }
 
         &:hover {
-          background-color: var(--nav-item-hover);
+          background-color: var(--bg-tertiary);
           color: var(--text-primary);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-          &::before {
-            opacity: 1;
-          }
-        }
-
-        &:active {
-          transform: translateY(0) scale(0.98);
         }
 
         .el-icon {
-          font-size: 20px;
-          z-index: 1;
+          font-size: 18px;
         }
       }
     }
@@ -494,44 +396,36 @@ const handleLogout = async () => {
       .user-info {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 8px 16px;
-        border-radius: 12px;
+        gap: var(--space-2);
+        padding: var(--space-1) var(--space-3);
+        border-radius: var(--radius-md);
         cursor: pointer;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        backdrop-filter: blur(10px);
+        transition: all var(--transition-fast);
+        border: 1px solid var(--border-light);
 
         &:hover {
-          background: var(--nav-item-hover);
-          border-color: rgba(0, 0, 0, 0.1);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          background-color: var(--bg-tertiary);
+          border-color: var(--border-medium);
         }
 
         .el-avatar {
-          border: 2px solid rgba(255, 255, 255, 0.8);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          border: 1px solid var(--border-light);
         }
 
         .username {
-          font-size: 14px;
+          font-size: var(--font-size-sm);
           color: var(--text-primary);
-          font-weight: 600;
-          margin: 0;
+          font-weight: var(--font-weight-medium);
         }
 
         .arrow-icon {
           font-size: 14px;
-          color: var(--text-secondary);
-          transition: all 0.3s ease;
-          opacity: 0.7;
+          color: var(--text-tertiary);
+          transition: transform var(--transition-fast);
         }
 
         &:hover .arrow-icon {
-          transform: rotate(180deg) scale(1.1);
-          opacity: 1;
+          transform: rotate(180deg);
         }
       }
     }
@@ -663,15 +557,4 @@ const handleLogout = async () => {
   }
 }
 
-// 面包屑导航动画
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 </style>
