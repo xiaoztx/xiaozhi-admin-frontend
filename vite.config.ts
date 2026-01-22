@@ -9,13 +9,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src') // 保留原有别名配置
     }
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: '@import "@/assets/scss/variables.scss";' // 保留SCSS全局变量
-      }
-    }
-  },
   server: {
     port: parseInt(process.env.FRONTEND_PORT || '5174'), // 默认5174，支持环境变量切换
     strictPort: true, // 端口被占用时直接报错，不自动切换（避免混乱）
