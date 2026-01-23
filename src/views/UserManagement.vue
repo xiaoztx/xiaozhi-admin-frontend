@@ -42,6 +42,7 @@
             class="filter-select" 
             @change="handleSearch"
           >
+            <el-option label="超级管理员" value="super_admin" />
             <el-option label="管理员" value="admin" />
             <el-option label="普通用户" value="user" />
             <el-option label="访客" value="guest" />
@@ -85,7 +86,7 @@
         @selection-change="handleSelectionChange"
         highlight-current-row
       >
-        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column type="selection" width="55" align="center" :selectable="checkSelectable" />
         
         <el-table-column prop="id" label="用户ID" width="100" align="center" sortable />
 
@@ -119,6 +120,7 @@
               inline-prompt
               active-text="正常"
               inactive-text="禁用"
+              :disabled="row.role === 'super_admin'"
               :before-change="() => handleStatusChange(row)"
             />
           </template>
@@ -134,7 +136,14 @@
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-divider direction="vertical" />
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button 
+              link 
+              type="danger" 
+              @click="handleDelete(row)"
+              :disabled="row.role === 'super_admin'"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -206,14 +215,23 @@
           </el-input>
         </el-form-item>
         <el-form-item label="角色" prop="role">
-          <el-select v-model="userForm.role" placeholder="请选择角色" style="width: 100%">
+          <el-select 
+            v-model="userForm.role" 
+            placeholder="请选择角色" 
+            style="width: 100%"
+            :disabled="isEdit && userForm.role === 'super_admin'"
+          >
+            <el-option label="超级管理员" value="super_admin" v-if="userForm.role === 'super_admin'" />
             <el-option label="管理员" value="admin" />
             <el-option label="普通用户" value="user" />
             <el-option label="访客" value="guest" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="userForm.status">
+          <el-radio-group 
+            v-model="userForm.status"
+            :disabled="isEdit && userForm.role === 'super_admin'"
+          >
             <el-radio value="active">正常</el-radio>
             <el-radio value="disabled">禁用</el-radio>
           </el-radio-group>
@@ -298,12 +316,13 @@ const loadUserList = () => {
     // 这里使用之前的模拟数据，实际应从API获取
     if (userList.value.length === 0) {
       userList.value = [
-        { id: 1, username: 'Admin', email: 'admin@example.com', role: 'admin', status: 'active', createdAt: '2024-01-01T10:00:00.000Z' },
-        { id: 2, username: 'User001', email: 'user1@example.com', role: 'user', status: 'active', createdAt: '2024-01-02T14:30:00.000Z' },
-        { id: 3, username: 'Guest', email: 'guest@example.com', role: 'guest', status: 'disabled', createdAt: '2024-01-03T09:15:00.000Z' },
+        { id: 1, username: 'SuperAdmin', email: 'super@xiaozhi.ai', role: 'super_admin', status: 'active', createdAt: '2024-01-01T00:00:00.000Z' },
+        { id: 2, username: 'Admin', email: 'admin@example.com', role: 'admin', status: 'active', createdAt: '2024-01-01T10:00:00.000Z' },
+        { id: 3, username: 'User001', email: 'user1@example.com', role: 'user', status: 'active', createdAt: '2024-01-02T14:30:00.000Z' },
+        { id: 4, username: 'Guest', email: 'guest@example.com', role: 'guest', status: 'disabled', createdAt: '2024-01-03T09:15:00.000Z' },
         // 生成更多模拟数据
         ...Array.from({ length: 7 }).map((_, i) => ({
-          id: i + 4,
+          id: i + 5,
           username: `User00${i + 2}`,
           email: `user${i + 2}@example.com`,
           role: 'user',
@@ -450,6 +469,11 @@ const handleSubmitUser = async () => {
   })
 }
 
+const checkSelectable = (row: any) => {
+  // 只有超级管理员不可被选中
+  return row.role !== 'super_admin'
+}
+
 const handleSelectionChange = (val: any[]) => {
   selectedUsers.value = val
 }
@@ -467,7 +491,8 @@ const handleCurrentChange = (val: number) => {
 // 辅助函数
 const getRoleTagType = (role: string) => {
   const map: Record<string, string> = {
-    admin: 'danger',
+    super_admin: 'danger',
+    admin: 'warning',
     user: 'primary',
     guest: 'info'
   }
@@ -476,6 +501,7 @@ const getRoleTagType = (role: string) => {
 
 const getRoleLabel = (role: string) => {
   const map: Record<string, string> = {
+    super_admin: '超级管理员',
     admin: '管理员',
     user: '普通用户',
     guest: '访客'

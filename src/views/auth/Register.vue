@@ -116,7 +116,7 @@ const registerForm = reactive({
   agreement: false
 })
 
-const validatePass2 = (rule: any, value: string, callback: any) => {
+const validatePass2 = (_rule: any, value: string, callback: any) => {
   if (value === '') {
     callback(new Error('请再次输入密码'))
   } else if (value !== registerForm.password) {
@@ -144,7 +144,7 @@ const registerRules = reactive<FormRules>({
   ],
   agreement: [
     { 
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (!value) {
           callback(new Error('请阅读并同意协议'))
         } else {
