@@ -13,7 +13,7 @@
             </svg>
           </div>
           <div v-if="!isCollapsed" class="logo-text">
-            <div class="brand-name">晓智管理</div>
+            <div class="brand-name">咔吥哆</div>
             <div class="brand-subtitle">Admin System</div>
           </div>
         </div>
@@ -109,18 +109,48 @@
             </router-link>
           </li>
 
-          <li class="nav-item">
-            <router-link
-              to="/github"
-              class="nav-link"
-              :class="{ active: $route.path === '/github' }"
+          <li class="nav-item" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+            <div 
+              class="nav-link cursor-pointer"
+              :class="{ active: $route.path.startsWith('/github') }"
             >
               <div class="nav-icon">
                 <el-icon><Link /></el-icon>
               </div>
-              <span v-if="!isCollapsed" class="nav-label">GitHub管理</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/github' }"></div>
-            </router-link>
+              <span v-if="!isCollapsed" class="nav-label flex-1">GitHub管理</span>
+              <el-icon 
+                v-if="!isCollapsed" 
+                class="arrow-icon"
+                :class="{ 'is-expanded': isGithubExpanded }"
+              >
+                <ArrowRight />
+              </el-icon>
+              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path.startsWith('/github') }"></div>
+            </div>
+            
+            <!-- 子菜单 -->
+            <ul v-show="!isCollapsed && isGithubExpanded" class="sub-menu transition-all duration-300">
+              <li class="sub-item">
+                <router-link
+                  to="/github/monitor"
+                  class="sub-link"
+                  :class="{ active: $route.path === '/github/monitor' }"
+                >
+                  <span class="sub-dot"></span>
+                  <span class="sub-label">仓库监控</span>
+                </router-link>
+              </li>
+              <li class="sub-item">
+                <router-link
+                  to="/github/account"
+                  class="sub-link"
+                  :class="{ active: $route.path === '/github/account' }"
+                >
+                  <span class="sub-dot"></span>
+                  <span class="sub-label">账户配置</span>
+                </router-link>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -173,7 +203,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import {
   House,
@@ -184,17 +215,38 @@ import {
   Link,
   Tools,
   DocumentCopy,
-  Close
+  ArrowRight
 } from '@element-plus/icons-vue'
 
+const route = useRoute()
 const themeStore = useThemeStore()
 
 const isCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
 const isMobile = computed(() => window.innerWidth <= 768)
+const isGithubExpanded = ref(false)
+
+// 监听路由变化，自动展开对应菜单
+watch(() => route.path, (newPath) => {
+  if (newPath.startsWith('/github')) {
+    isGithubExpanded.value = true
+  }
+}, { immediate: true })
 
 const closeMobileMenu = () => {
   themeStore.closeMobileMenu()
+}
+
+const handleMouseEnter = () => {
+  if (!isCollapsed.value) {
+    isGithubExpanded.value = true
+  }
+}
+
+const handleMouseLeave = () => {
+  if (!isCollapsed.value && !route.path.startsWith('/github')) {
+    isGithubExpanded.value = false
+  }
 }
 </script>
 
@@ -407,6 +459,67 @@ const closeMobileMenu = () => {
             overflow: hidden;
             text-overflow: ellipsis;
           }
+          
+          .arrow-icon {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            transition: transform var(--transition-normal);
+            margin-left: 8px;
+            
+            &.is-expanded {
+              transform: rotate(90deg);
+            }
+          }
+        }
+        
+        .sub-menu {
+          list-style: none;
+          padding: 4px 0 4px 20px;
+          margin: 0;
+          
+          .sub-item {
+            margin: 2px 0;
+            
+            .sub-link {
+              display: flex;
+              align-items: center;
+              padding: 8px 12px 8px 24px;
+              color: var(--text-secondary);
+              text-decoration: none;
+              font-size: 13px;
+              border-radius: var(--radius-md);
+              transition: all var(--transition-fast);
+              
+              .sub-dot {
+                width: 4px;
+                height: 4px;
+                border-radius: 50%;
+                background-color: currentColor;
+                margin-right: 8px;
+                opacity: 0.6;
+              }
+              
+              &:hover {
+                color: var(--text-primary);
+                background-color: var(--bg-tertiary);
+                
+                .sub-dot {
+                  opacity: 1;
+                }
+              }
+              
+              &.active {
+                color: var(--color-primary);
+                background-color: var(--bg-tertiary);
+                font-weight: 500;
+                
+                .sub-dot {
+                  opacity: 1;
+                  background-color: var(--color-primary);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -466,6 +579,7 @@ const closeMobileMenu = () => {
 
     .sidebar-header {
       // 折叠按钮已移至顶栏
+      display: block;
     }
 
     .sidebar-nav {

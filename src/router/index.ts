@@ -34,9 +34,14 @@ const router = createRouter({
       component: () => import('@/views/OSSManagement.vue')
     },
     {
-      path: '/github',
-      name: 'github',
-      component: () => import('@/views/GitHubManagement.vue')
+      path: '/github/account',
+      name: 'github-account',
+      component: () => import('@/views/github/GitHubAccount.vue')
+    },
+    {
+      path: '/github/monitor',
+      name: 'github-monitor',
+      component: () => import('@/views/github/GitHubMonitor.vue')
     },
     {
       path: '/settings',

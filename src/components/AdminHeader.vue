@@ -127,7 +127,8 @@ const breadcrumbItems = computed(() => {
     '/cloud-config': '云配置管理',
     '/dns': 'DNS管理',
     '/oss': '对象存储管理',
-    '/github': 'GitHub管理',
+    '/github/monitor': '仓库监控',
+    '/github/account': '账户配置',
     '/settings': '系统设置',
     '/logs': '操作日志'
   }
@@ -136,6 +137,10 @@ const breadcrumbItems = computed(() => {
     breadcrumbs.push({ label: '仪表盘', path: '/' })
   } else {
     breadcrumbs.push({ label: '首页', path: '/' })
+    // 处理二级菜单面包屑
+    if (path.startsWith('/github')) {
+      breadcrumbs.push({ label: 'GitHub管理', path: '/github' })
+    }
     breadcrumbs.push({ label: routeMap[path] || '未知页面', path })
   }
 
