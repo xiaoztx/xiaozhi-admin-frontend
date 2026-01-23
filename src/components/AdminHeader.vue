@@ -74,11 +74,11 @@
         </div>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item>
+            <el-dropdown-item @click="$router.push('/profile')">
               <el-icon><User /></el-icon>
               个人中心
             </el-dropdown-item>
-            <el-dropdown-item>
+            <el-dropdown-item @click="$router.push('/settings')">
               <el-icon><Setting /></el-icon>
               设置
             </el-dropdown-item>
@@ -130,7 +130,8 @@ const breadcrumbItems = computed(() => {
     '/github/monitor': '仓库监控',
     '/github/account': '账户配置',
     '/settings': '系统设置',
-    '/logs': '操作日志'
+    '/logs': '操作日志',
+    '/profile': '个人中心'
   }
 
   if (path === '/') {

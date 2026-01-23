@@ -1,9 +1,9 @@
 <template>
-  <AdminLayout />
+  <RouterView />
 </template>
 
 <script setup lang="ts">
-import AdminLayout from '@/layouts/AdminLayout.vue'
+// AdminLayout will be handled by router configuration
 </script>
 
 <style>

@@ -87,19 +87,20 @@
       >
         <el-table-column type="selection" width="55" align="center" />
         
-        <el-table-column label="用户信息" min-width="200">
+        <el-table-column prop="id" label="用户ID" width="100" align="center" sortable />
+
+        <el-table-column label="用户名" min-width="180">
           <template #default="{ row }">
             <div class="user-info-cell">
               <el-avatar :size="32" class="user-avatar" :style="{ backgroundColor: getAvatarColor(row.username) }">
                 {{ row.username.charAt(0).toUpperCase() }}
               </el-avatar>
-              <div class="user-details">
-                <span class="username">{{ row.username }}</span>
-                <span class="email">{{ row.email }}</span>
-              </div>
+              <span class="username">{{ row.username }}</span>
             </div>
           </template>
         </el-table-column>
+
+        <el-table-column prop="email" label="邮箱" min-width="200" show-overflow-tooltip />
 
         <el-table-column prop="role" label="角色" width="120" align="center">
           <template #default="{ row }">
@@ -123,7 +124,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="createdAt" label="注册时间" min-width="160" sortable />
+        <el-table-column prop="createdAt" label="注册时间" width="180" sortable>
+          <template #default="{ row }">
+            {{ formatDateTime(row.createdAt) }}
+          </template>
+        </el-table-column>
         
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
@@ -293,9 +298,9 @@ const loadUserList = () => {
     // 这里使用之前的模拟数据，实际应从API获取
     if (userList.value.length === 0) {
       userList.value = [
-        { id: 1, username: 'Admin', email: 'admin@example.com', role: 'admin', status: 'active', createdAt: '2024-01-01' },
-        { id: 2, username: 'User001', email: 'user1@example.com', role: 'user', status: 'active', createdAt: '2024-01-02' },
-        { id: 3, username: 'Guest', email: 'guest@example.com', role: 'guest', status: 'disabled', createdAt: '2024-01-03' },
+        { id: 1, username: 'Admin', email: 'admin@example.com', role: 'admin', status: 'active', createdAt: '2024-01-01T10:00:00.000Z' },
+        { id: 2, username: 'User001', email: 'user1@example.com', role: 'user', status: 'active', createdAt: '2024-01-02T14:30:00.000Z' },
+        { id: 3, username: 'Guest', email: 'guest@example.com', role: 'guest', status: 'disabled', createdAt: '2024-01-03T09:15:00.000Z' },
         // 生成更多模拟数据
         ...Array.from({ length: 7 }).map((_, i) => ({
           id: i + 4,
@@ -303,7 +308,7 @@ const loadUserList = () => {
           email: `user${i + 2}@example.com`,
           role: 'user',
           status: Math.random() > 0.2 ? 'active' : 'disabled',
-          createdAt: '2024-01-05'
+          createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString()
         }))
       ]
     }
@@ -311,6 +316,20 @@ const loadUserList = () => {
     loading.value = false
     refreshLoading.value = false
   }, 500)
+}
+
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).replace(/\//g, '-')
 }
 
 // 事件处理
@@ -419,7 +438,7 @@ const handleSubmitUser = async () => {
           userList.value.unshift({
             ...userForm,
             id: Date.now(),
-            createdAt: new Date().toISOString().split('T')[0]
+            createdAt: new Date().toISOString()
           })
           total.value++
           ElMessage.success('添加成功')
@@ -571,36 +590,23 @@ onMounted(() => {
     }
   }
 
-  // 表格样式优化
-  .user-info-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .user-avatar {
-      flex-shrink: 0;
-      color: #fff;
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .user-details {
+    .user-info-cell {
       display: flex;
-      flex-direction: column;
-      
+      align-items: center;
+      gap: 12px;
+  
+      .user-avatar {
+        flex-shrink: 0;
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+      }
+  
       .username {
         font-weight: 500;
         color: var(--text-primary);
-        line-height: 1.2;
-      }
-      
-      .email {
-        font-size: 12px;
-        color: var(--text-secondary);
-        margin-top: 2px;
       }
     }
-  }
 
   .pagination-container {
     display: flex;
