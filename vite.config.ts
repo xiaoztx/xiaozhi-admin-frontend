@@ -15,10 +15,10 @@ export default defineConfig({
     
     proxy: {
       '/api': {
-        // 动态指向后端端口，支持BACKEND_PORT环境变量，默认9090
-        target: `http://127.0.0.1:${process.env.BACKEND_PORT || '9090'}`,
+        // 动态指向后端端口，支持BACKEND_PORT环境变量，默认8081
+        target: `http://127.0.0.1:${process.env.BACKEND_PORT || '8081'}`,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '') // 保留原有rewrite逻辑
+        // rewrite: (path) => path.replace(/^\/api/, '') // 移除 rewrite，后端路由包含 /api
       }
     }
   }

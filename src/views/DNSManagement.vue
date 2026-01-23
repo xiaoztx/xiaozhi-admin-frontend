@@ -408,9 +408,12 @@ const handleAdd = async () => {
   dialogVisible.value = true
 }
 
-const handleManage = (_row: DnsDomain) => {
-  // 解析功能暂不做
-  ElMessage.info('解析功能开发中')
+const handleManage = (row: DnsDomain) => {
+  router.push({
+    name: 'dns-records',
+    params: { domain: row.id }, // 路由参数定义为 :domain，这里传 ID
+    query: { domainName: row.domain } // 传递域名名称，用于显示标题
+  })
 }
 
 const handleDelete = (row: DnsDomain) => {

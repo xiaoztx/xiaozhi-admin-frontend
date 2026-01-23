@@ -67,21 +67,21 @@
         class="data-table"
         :header-cell-style="{ background: 'var(--bg-tertiary)' }"
       >
-        <el-table-column prop="hostRecord" label="主机记录" min-width="120">
+        <el-table-column prop="sub_domain" label="主机记录" min-width="120">
           <template #default="{ row }">
-             <span class="host-record">{{ row.hostRecord }}</span>
+             <span class="host-record">{{ row.sub_domain }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="recordType" label="记录类型" width="100">
+        <el-table-column prop="record_type" label="记录类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="getRecordTypeTag(row.recordType)" size="small" effect="light">{{ row.recordType }}</el-tag>
+            <el-tag :type="getRecordTypeTag(row.record_type)" size="small" effect="light">{{ row.record_type }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="lineType" label="线路类型" width="100">
+        <el-table-column prop="record_line" label="线路类型" width="100">
           <template #default="{ row }">
-             {{ row.lineType }}
+             {{ row.record_line }}
           </template>
         </el-table-column>
 
@@ -93,9 +93,9 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="mxPriority" label="MX优先级" width="100" align="center">
+        <el-table-column prop="mx" label="MX优先级" width="100" align="center">
           <template #default="{ row }">
-             {{ row.mxPriority || '-' }}
+             {{ row.mx || '-' }}
           </template>
         </el-table-column>
 
@@ -107,11 +107,12 @@
           <template #default="{ row }">
             <el-switch
               v-model="row.status"
-              active-value="active"
-              inactive-value="disabled"
+              active-value="ENABLE"
+              inactive-value="DISABLE"
               inline-prompt
               active-text="启用"
               inactive-text="暂停"
+              :loading="row.statusLoading"
               :before-change="() => handleStatusChange(row)"
             />
           </template>
@@ -127,6 +128,10 @@
             </el-button>
           </template>
         </el-table-column>
+        
+        <template #empty>
+          <el-empty description="暂无解析记录" />
+        </template>
       </el-table>
 
       <!-- 分页 -->
@@ -160,19 +165,19 @@
         class="record-form"
         status-icon
       >
-        <el-form-item label="主机记录" prop="hostRecord">
-          <el-input v-model="form.hostRecord" placeholder="例如：www, @, mail">
+        <el-form-item label="主机记录" prop="sub_domain">
+          <el-input v-model="form.sub_domain" placeholder="例如：www, @, mail">
              <template #append>.{{ currentDomain }}</template>
           </el-input>
           <div class="form-tip">
-            <span v-if="form.hostRecord === '@'">直接解析主域名</span>
-            <span v-else-if="form.hostRecord === '*'">泛解析，匹配所有子域名</span>
+            <span v-if="form.sub_domain === '@'">直接解析主域名</span>
+            <span v-else-if="form.sub_domain === '*'">泛解析，匹配所有子域名</span>
             <span v-else>解析子域名，如：www</span>
           </div>
         </el-form-item>
 
-        <el-form-item label="记录类型" prop="recordType">
-          <el-select v-model="form.recordType" placeholder="请选择记录类型" style="width: 100%" @change="handleTypeChange">
+        <el-form-item label="记录类型" prop="record_type">
+          <el-select v-model="form.record_type" placeholder="请选择记录类型" style="width: 100%" @change="handleTypeChange">
             <el-option label="A - 将域名指向一个IPV4地址" value="A" />
             <el-option label="CNAME - 将域名指向另一个域名" value="CNAME" />
             <el-option label="MX - 将域名指向邮件服务器地址" value="MX" />
@@ -183,8 +188,8 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="线路类型" prop="lineType">
-          <el-select v-model="form.lineType" placeholder="默认" style="width: 100%">
+        <el-form-item label="线路类型" prop="record_line">
+          <el-select v-model="form.record_line" placeholder="默认" style="width: 100%">
             <el-option label="默认" value="默认" />
             <el-option label="电信" value="电信" />
             <el-option label="联通" value="联通" />
@@ -194,14 +199,14 @@
         </el-form-item>
 
         <el-form-item label="记录值" prop="value">
-          <el-input v-model="form.value" :placeholder="getValuePlaceholder(form.recordType)" />
+          <el-input v-model="form.value" :placeholder="getValuePlaceholder(form.record_type)" />
         </el-form-item>
 
-        <el-form-item label="MX优先级" prop="mxPriority" v-if="form.recordType === 'MX'">
-          <el-input-number v-model="form.mxPriority" :min="1" :max="50" controls-position="right" />
+        <el-form-item label="MX优先级" prop="mx" v-if="form.record_type === 'MX'">
+          <el-input-number v-model="form.mx" :min="1" :max="50" controls-position="right" />
         </el-form-item>
 
-        <el-form-item label="权重" prop="weight" v-if="['A', 'AAAA', 'CNAME'].includes(form.recordType)">
+        <el-form-item label="权重" prop="weight" v-if="['A', 'AAAA', 'CNAME'].includes(form.record_type)">
            <el-input-number v-model="form.weight" :min="0" :max="100" controls-position="right" />
            <span class="ml-2 text-secondary text-sm">（0-100，可选）</span>
         </el-form-item>
@@ -235,12 +240,14 @@ import {
   ArrowLeft, Search, Plus, RefreshRight, Edit, Delete
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { getRecords, createRecord, updateRecord, deleteRecord, setRecordStatus } from '@/api/dns_record'
 
 const route = useRoute()
 const router = useRouter()
 
 // 状态变量
-const currentDomain = ref(route.params.domain as string || 'unknown.com')
+const currentDomain = ref((route.query.domainName as string) || '加载中...') // 优先从 Query 获取
+const domainId = ref(route.params.domain as string)
 const loading = ref(false)
 const searchQuery = ref('')
 const typeFilter = ref('')
@@ -254,100 +261,53 @@ const formRef = ref<FormInstance>()
 // 类型定义
 interface DnsRecord {
   id: number
-  hostRecord: string
-  recordType: string
-  lineType: string
+  record_id: string
+  sub_domain: string
+  record_type: string
+  record_line: string
   value: string
   weight?: number
-  mxPriority?: number
+  mx?: number
   ttl: number
   remark?: string
-  status: 'active' | 'disabled'
+  status: 'ENABLE' | 'DISABLE'
+  statusLoading?: boolean // 前端状态loading
 }
 
-// 模拟数据
-const recordList = ref<DnsRecord[]>([
-  {
-    id: 1,
-    hostRecord: '@',
-    recordType: 'A',
-    lineType: '默认',
-    value: '1.2.3.4',
-    ttl: 600,
-    status: 'active',
-    remark: '主站IP'
-  },
-  {
-    id: 2,
-    hostRecord: 'www',
-    recordType: 'CNAME',
-    lineType: '默认',
-    value: 'lb.example.com',
-    ttl: 600,
-    status: 'active',
-    remark: '负载均衡'
-  },
-  {
-    id: 3,
-    hostRecord: 'mail',
-    recordType: 'A',
-    lineType: '默认',
-    value: '1.2.3.5',
-    ttl: 600,
-    status: 'active'
-  },
-  {
-    id: 4,
-    hostRecord: '@',
-    recordType: 'MX',
-    lineType: '默认',
-    value: 'mail.example.com',
-    mxPriority: 10,
-    ttl: 600,
-    status: 'active'
-  },
-  {
-    id: 5,
-    hostRecord: 'test',
-    recordType: 'A',
-    lineType: '电信',
-    value: '1.2.3.6',
-    ttl: 600,
-    status: 'disabled',
-    remark: '测试环境'
-  }
-])
+// 数据
+const recordList = ref<DnsRecord[]>([])
 
 // 表单数据
 const form = reactive({
   id: 0,
-  hostRecord: '',
-  recordType: 'A',
-  lineType: '默认',
+  record_id: '0',
+  sub_domain: '',
+  record_type: 'A',
+  record_line: '默认',
   value: '',
   weight: undefined as number | undefined,
-  mxPriority: undefined as number | undefined,
+  mx: undefined as number | undefined,
   ttl: 600,
   remark: ''
 })
 
 // 验证规则
 const rules = reactive<FormRules>({
-  hostRecord: [{ required: true, message: '请输入主机记录', trigger: 'blur' }],
-  recordType: [{ required: true, message: '请选择记录类型', trigger: 'change' }],
-  lineType: [{ required: true, message: '请选择线路类型', trigger: 'change' }],
+  sub_domain: [{ required: true, message: '请输入主机记录', trigger: 'blur' }],
+  record_type: [{ required: true, message: '请选择记录类型', trigger: 'change' }],
+  record_line: [{ required: true, message: '请选择线路类型', trigger: 'change' }],
   value: [{ required: true, message: '请输入记录值', trigger: 'blur' }],
   ttl: [{ required: true, message: '请输入TTL', trigger: 'blur' }],
-  mxPriority: [{ required: true, message: '请输入MX优先级', trigger: 'blur' }]
+  mx: [{ required: true, message: '请输入MX优先级', trigger: 'blur' }]
 })
 
 // 计算属性
 const filteredData = computed(() => {
   return recordList.value.filter(item => {
     const matchesSearch = 
-      item.hostRecord.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      item.sub_domain.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.value.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesType = typeFilter.value ? item.recordType === typeFilter.value : true
+    const matchesType = typeFilter.value ? item.record_type === typeFilter.value : true
     return matchesSearch && matchesType
   })
 })
@@ -389,21 +349,38 @@ const getValuePlaceholder = (type: string) => {
 }
 
 const handleTypeChange = () => {
-  // 切换类型时清空或调整特定字段
-  if (form.recordType !== 'MX') form.mxPriority = undefined
-  if (!['A', 'AAAA', 'CNAME'].includes(form.recordType)) form.weight = undefined
+  if (form.record_type !== 'MX') form.mx = undefined
+  if (!['A', 'AAAA', 'CNAME'].includes(form.record_type)) form.weight = undefined
 }
 
 const handleSearch = () => {
   currentPage.value = 1
 }
 
-const handleRefresh = () => {
+const loadData = async () => {
   loading.value = true
-  setTimeout(() => {
+  try {
+    const res: any = await getRecords(domainId.value, {
+      keyword: searchQuery.value
+    })
+    recordList.value = res.list
+    if (res.domain) {
+      currentDomain.value = res.domain.domain_name
+    }
+    
+    // 尝试从第一条记录获取域名信息（如果后端有返回）或者需要额外接口
+    // 这里简单处理，如果列表有数据，取 domain.domain_name (如果后端做了 preload)
+    // 或者我们直接在 url query 里传 domainName 会更方便，目前暂不处理 currentDomain
+  } catch (error) {
+    console.error(error)
+  } finally {
     loading.value = false
-    ElMessage.success('刷新成功')
-  }, 1000)
+  }
+}
+
+const handleRefresh = () => {
+  loadData()
+  ElMessage.success('刷新成功')
 }
 
 const handleSizeChange = (val: number) => {
@@ -416,7 +393,8 @@ const handleCurrentChange = (val: number) => {
 
 const handleStatusChange = (row: DnsRecord) => {
   return new Promise<boolean>((resolve) => {
-    const action = row.status === 'active' ? '暂停' : '启用'
+    const action = row.status === 'ENABLE' ? '暂停' : '启用'
+    const newStatus = row.status === 'ENABLE' ? 'DISABLE' : 'ENABLE'
     
     ElMessageBox.confirm(
       `确定要${action}该记录吗？`,
@@ -426,9 +404,18 @@ const handleStatusChange = (row: DnsRecord) => {
         cancelButtonText: '取消',
         type: 'warning',
       }
-    ).then(() => {
-      ElMessage.success(`${action}成功`)
-      resolve(true)
+    ).then(async () => {
+      row.statusLoading = true
+      try {
+        await setRecordStatus(domainId.value, row.record_id, newStatus)
+        ElMessage.success(`${action}成功`)
+        resolve(true)
+      } catch (error) {
+        console.error(error)
+        resolve(false)
+      } finally {
+        row.statusLoading = false
+      }
     }).catch(() => {
       resolve(false)
     })
@@ -439,12 +426,13 @@ const handleAdd = () => {
   isEdit.value = false
   Object.assign(form, {
     id: 0,
-    hostRecord: '',
-    recordType: 'A',
-    lineType: '默认',
+    record_id: '0',
+    sub_domain: '',
+    record_type: 'A',
+    record_line: '默认',
     value: '',
     weight: undefined,
-    mxPriority: undefined,
+    mx: undefined,
     ttl: 600,
     remark: ''
   })
@@ -459,7 +447,7 @@ const handleEdit = (row: DnsRecord) => {
 
 const handleDelete = (row: DnsRecord) => {
   ElMessageBox.confirm(
-    `确定要删除记录 "${row.hostRecord} ${row.recordType}" 吗？`,
+    `确定要删除记录 "${row.sub_domain} ${row.record_type}" 吗？`,
     '警告',
     {
       confirmButtonText: '确定',
@@ -467,11 +455,13 @@ const handleDelete = (row: DnsRecord) => {
       type: 'warning',
       confirmButtonClass: 'el-button--danger'
     }
-  ).then(() => {
-    const index = recordList.value.findIndex(r => r.id === row.id)
-    if (index !== -1) {
-      recordList.value.splice(index, 1)
+  ).then(async () => {
+    try {
+      await deleteRecord(domainId.value, row.record_id)
       ElMessage.success('删除成功')
+      loadData()
+    } catch (error) {
+      console.error(error)
     }
   }).catch(() => {})
 }
@@ -479,33 +469,35 @@ const handleDelete = (row: DnsRecord) => {
 const handleSubmit = async () => {
   if (!formRef.value) return
   
-  await formRef.value.validate((valid) => {
+  await formRef.value.validate(async (valid) => {
     if (valid) {
       submitting.value = true
-      setTimeout(() => {
+      try {
+        const data = {
+          ...form,
+          domain_id: parseInt(domainId.value)
+        }
+        
         if (isEdit.value) {
-          const index = recordList.value.findIndex(r => r.id === form.id)
-          if (index !== -1 && recordList.value[index]) {
-            Object.assign(recordList.value[index]!, { ...form })
-            ElMessage.success('更新成功')
-          }
+          await updateRecord(domainId.value, form.record_id, data)
+          ElMessage.success('更新成功')
         } else {
-          recordList.value.unshift({
-            ...form,
-            id: Date.now(),
-            status: 'active'
-          })
+          await createRecord(domainId.value, data)
           ElMessage.success('添加成功')
         }
         dialogVisible.value = false
+        loadData()
+      } catch (error) {
+        console.error(error)
+      } finally {
         submitting.value = false
-      }, 600)
+      }
     }
   })
 }
 
 onMounted(() => {
-  // 加载数据
+  loadData()
 })
 </script>
 
