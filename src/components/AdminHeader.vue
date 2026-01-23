@@ -142,6 +142,14 @@ const breadcrumbItems = computed(() => {
     if (path.startsWith('/github')) {
       breadcrumbs.push({ label: 'GitHub管理', path: '/github' })
     }
+    
+    // 特殊路由处理
+    if (route.name === 'dns-records') {
+      breadcrumbs.push({ label: 'DNS管理', path: '/dns' })
+      breadcrumbs.push({ label: '解析记录', path })
+      return breadcrumbs
+    }
+
     breadcrumbs.push({ label: routeMap[path] || '未知页面', path })
   }
 
