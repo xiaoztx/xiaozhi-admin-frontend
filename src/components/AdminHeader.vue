@@ -297,7 +297,7 @@ const handleLogout = async () => {
 
   .breadcrumb {
     flex: 1;
-    margin: 0 var(--space-4);
+    margin-left: 4px; // 减小左侧间距，使其更靠近侧栏按钮
     display: flex;
     align-items: center;
 
