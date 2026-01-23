@@ -104,6 +104,93 @@ html, body {
   overflow: hidden;
 }
 
+// =============================================================================
+// 表格组件通用修复 (浅色模式 & 深色模式通用)
+// =============================================================================
+// 将这些修复移出 .dark 作用域，确保浅色模式下的固定列也能正确显示
+.el-table {
+  // 覆盖 Element Plus CSS 变量 - 保持与 element-theme.scss 一致
+  --el-table-bg-color: var(--bg-primary);
+  --el-table-tr-bg-color: var(--bg-primary);
+  --el-table-header-bg-color: var(--bg-tertiary);
+  --el-table-border-color: var(--border-primary);
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--text-secondary);
+  
+  // 关键变量：统一控制 Hover 和 选中状态的颜色
+  --el-table-row-hover-bg-color: var(--bg-secondary);
+  --el-table-current-row-bg-color: var(--bg-secondary);
+
+  // 去除固定列的阴影，只在滚动时显示
+  .el-table__fixed-right-patch {
+    background-color: var(--bg-tertiary);
+  }
+
+  // 修复表头固定列背景色不一致的问题
+  .el-table__header {
+    // 强制所有表头单元格（包括普通列和固定列）使用统一背景色
+    th.el-table__cell {
+      background-color: var(--bg-tertiary) !important;
+    }
+    
+    // 专门针对固定列的额外保障，防止权重问题
+    th.el-table-fixed-column--right,
+    th.el-table__fixed-right {
+      background-color: var(--bg-tertiary) !important;
+    }
+  }
+
+  // 修复表体固定列背景色问题
+  .el-table__body {
+    // 强制移除所有单元格的背景过渡，确保左右完全同步，无拖尾
+    tr.el-table__row td {
+      transition: background-color 0s !important;
+    }
+
+    tr.el-table__row {
+      // 1. 常态：固定列使用表格背景色
+      td.el-table-fixed-column--right,
+      td.el-table__fixed-right {
+        background-color: var(--bg-primary);
+      }
+      
+      // 2. 斑马纹行：固定列使用斑马纹背景色
+      &.el-table__row--striped {
+        td.el-table-fixed-column--right,
+        td.el-table__fixed-right {
+          background-color: #fafafa; // 浅色模式默认斑马纹颜色
+        }
+      }
+
+      // 3. 选中行 (Current Row)：固定列必须同步选中色
+      &.current-row {
+        td.el-table-fixed-column--right,
+        td.el-table__fixed-right {
+          background-color: var(--el-table-current-row-bg-color) !important;
+        }
+      }
+    }
+
+    // 4. Hover 状态同步核心方案：
+    // 禁用 CSS 原生 :hover，统一使用 JS 添加的 .hover-row 类来控制背景色
+    // 这样可以确保主表格和固定列的变色时机完全一致（都等待 JS 事件），消除时间差导致的拖尾感
+    
+    // 4.1 禁用原生 hover
+    tr:hover > td {
+      background-color: inherit !important;
+    }
+
+    // 4.2 启用 .hover-row 类控制 (Element Plus 会在鼠标悬停时给 tr 添加此类)
+    tr.hover-row {
+      > td.el-table__cell,
+      > td.el-table-fixed-column--right,
+      > td.el-table__fixed-right {
+        background-color: var(--el-table-row-hover-bg-color) !important;
+      }
+    }
+  }
+}
+
 // 企业级深色主题
 .dark {
   // 企业级深色背景系统
@@ -174,28 +261,49 @@ html, body {
   }
 
   .el-input {
-    .el-input__inner {
+    // 适配 wrapper
+    .el-input__wrapper {
       background-color: var(--bg-tertiary);
-      border-color: var(--border-primary);
-      color: var(--text-primary);
-
-      &:focus {
-        border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px var(--border-primary) inset;
+      
+      &.is-focus {
+        box-shadow: 0 0 0 1px var(--color-primary) inset;
       }
+    }
 
+    .el-input__inner {
+      color: var(--text-primary);
+      background-color: transparent !important;
+      box-shadow: none !important;
+      
       &::placeholder {
         color: var(--text-tertiary);
       }
     }
+
+    // 适配旧版或特殊情况
+    .el-input__inner {
+      border-color: var(--border-primary);
+    }
   }
 
   .el-select {
-    .el-select__input {
-      .el-input__inner {
-        background-color: var(--bg-tertiary);
-        border-color: var(--border-primary);
-        color: var(--text-primary);
+    .el-select__wrapper {
+      background-color: var(--bg-tertiary);
+      box-shadow: 0 0 0 1px var(--border-primary) inset;
+
+      &.is-focused {
+        box-shadow: 0 0 0 1px var(--color-primary) inset;
       }
+    }
+
+    .el-select__input {
+      color: var(--text-primary);
+    }
+    
+    // 下拉箭头等图标
+    .el-select__suffix {
+      color: var(--text-secondary);
     }
   }
 
@@ -220,14 +328,12 @@ html, body {
     }
   }
 
+  // 针对暗色模式的表格特定覆盖
   .el-table {
     background-color: var(--bg-secondary);
     color: var(--text-primary);
-
+    
     .el-table__header {
-      background-color: var(--bg-tertiary);
-      border-bottom-color: var(--border-primary);
-
       th {
         background-color: var(--bg-tertiary);
         border-bottom-color: var(--border-primary);
@@ -236,16 +342,26 @@ html, body {
     }
 
     .el-table__row {
-      background-color: var(--bg-secondary);
       border-bottom-color: var(--border-primary);
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.02);
-      }
 
       td {
         border-bottom-color: var(--border-primary);
         color: var(--text-primary);
+        background-color: inherit; // 关键：让单元格背景继承行的背景，确保固定列同步
+      }
+    }
+    
+    // 修复固定列在 hover 时的背景色问题
+    .el-table__body tr:hover > td.el-table-fixed-column--right,
+    .el-table__body tr:hover > td.el-table__fixed-right {
+      background-color: var(--el-table-row-hover-bg-color);
+    }
+    
+    // 暗色模式下的斑马纹颜色修正
+    .el-table__body tr.el-table__row--striped {
+      td.el-table-fixed-column--right,
+      td.el-table__fixed-right {
+        background-color: #2a2a2a; // 暗色模式斑马纹
       }
     }
   }
@@ -469,3 +585,6 @@ html, body {
     }
   }
 }
+
+// 导入Element Plus组件主题样式
+@import './element-theme.scss';

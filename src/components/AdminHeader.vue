@@ -20,7 +20,7 @@
 
     <!-- 面包屑导航 -->
     <div class="breadcrumb">
-      <el-breadcrumb separator="/">
+      <el-breadcrumb :separator-icon="ArrowRight">
         <el-breadcrumb-item
           v-for="(item, index) in breadcrumbItems"
           :key="index"
@@ -35,7 +35,7 @@
     <div class="header-actions">
       <!-- 主题切换 -->
       <el-button
-        type="text"
+        link
         @click="toggleTheme"
         class="theme-btn"
       >
@@ -47,8 +47,8 @@
 
       <!-- 消息通知 -->
       <el-dropdown trigger="click" class="notification-dropdown">
-        <el-badge :value="3" :max="99" class="notification-badge">
-          <el-button type="text" class="notification-btn">
+        <el-badge :value="3" :max="99" class="notification-badge" :offset="[-2, 6]">
+          <el-button link class="notification-btn">
             <el-icon><Bell /></el-icon>
           </el-button>
         </el-badge>
@@ -106,7 +106,8 @@ import {
   ArrowDown,
   User,
   Setting,
-  SwitchButton
+  SwitchButton,
+  ArrowRight
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -179,7 +180,7 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-6);
+  padding: 0 20px;
   box-shadow: var(--shadow-sm);
   z-index: 100;
 
@@ -296,36 +297,35 @@ const handleLogout = async () => {
     align-items: center;
 
     :deep(.el-breadcrumb) {
-      font-size: var(--font-size-sm);
-      line-height: 1.4;
+      font-size: 14px;
+      line-height: 1.5;
 
       .el-breadcrumb__item {
         display: flex;
         align-items: center;
 
-        .el-breadcrumb__link {
+        .el-breadcrumb__inner {
           color: var(--text-secondary);
-          transition: color var(--transition-fast);
-          padding: 4px 8px;
-          border-radius: var(--radius-sm);
-          font-weight: var(--font-weight-medium);
-
+          font-weight: 400;
+          transition: all 0.3s;
+          
           &:hover {
-            color: var(--text-primary);
-            background-color: var(--bg-tertiary);
+            color: var(--color-primary);
+          }
+          
+          &.is-link {
+            font-weight: 400;
           }
         }
 
-        &:last-child .el-breadcrumb__link {
+        &:last-child .el-breadcrumb__inner {
           color: var(--text-primary);
-          font-weight: var(--font-weight-semibold);
-          background-color: var(--bg-tertiary);
+          font-weight: 600;
         }
 
         .el-breadcrumb__separator {
-          margin: 0 6px;
+          margin: 0 8px;
           color: var(--text-tertiary);
-          font-size: var(--font-size-xs);
         }
       }
     }

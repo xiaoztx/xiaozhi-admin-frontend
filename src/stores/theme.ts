@@ -11,6 +11,15 @@ export const useThemeStore = defineStore('theme', () => {
   const toggleTheme = () => {
     isDark.value = !isDark.value
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+    updateThemeClass()
+  }
+
+  const updateThemeClass = () => {
+    if (isDark.value) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }
 
   const toggleSidebar = () => {
@@ -33,7 +42,12 @@ export const useThemeStore = defineStore('theme', () => {
 
     if (savedTheme) {
       isDark.value = savedTheme === 'dark'
+    } else {
+      // Check system preference
+      isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
     }
+    
+    updateThemeClass()
 
     if (savedSidebar) {
       isSidebarCollapsed.value = savedSidebar === 'true'

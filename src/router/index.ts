@@ -24,6 +24,11 @@ const router = createRouter({
       component: () => import('@/views/DNSManagement.vue')
     },
     {
+      path: '/dns/:domain/records',
+      name: 'dns-records',
+      component: () => import('@/views/DNSRecordManagement.vue')
+    },
+    {
       path: '/oss',
       name: 'oss',
       component: () => import('@/views/OSSManagement.vue')
