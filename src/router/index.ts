@@ -17,6 +17,7 @@ const router = createRouter({
     {
       path: '/',
       component: AdminLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: '',
@@ -76,6 +77,17 @@ const router = createRouter({
       ]
     }
   ]
+})
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+
+  if (requiresAuth && !token) {
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 export default router

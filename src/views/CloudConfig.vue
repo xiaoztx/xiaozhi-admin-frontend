@@ -16,7 +16,7 @@
           <el-icon><Link /></el-icon>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ connectedCount }}</div>
+          <div class="stat-value">{{ configList.filter(item => item.status === 'active' || item.status === 'connected').length }}</div>
           <div class="stat-label">连接正常</div>
         </div>
       </el-card>
@@ -25,7 +25,7 @@
           <el-icon><Warning /></el-icon>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ configList.length - connectedCount }}</div>
+          <div class="stat-value">{{ configList.filter(item => item.status === 'error' || item.status === 'inactive').length }}</div>
           <div class="stat-label">连接异常</div>
         </div>
       </el-card>
@@ -68,7 +68,7 @@
       <!-- 表格区域 -->
       <el-table
         v-loading="loading"
-        :data="paginatedData"
+        :data="configList"
         style="width: 100%"
         class="data-table"
         :header-cell-style="{ background: 'var(--bg-tertiary)' }"
@@ -86,6 +86,7 @@
             </el-tag>
           </template>
         </el-table-column>
+
         <el-table-column prop="accessKeyId" label="AccessKey ID" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             {{ formatAccessKey(row.accessKeyId) }}
@@ -94,8 +95,8 @@
         <el-table-column prop="status" label="连接状态" width="120">
           <template #default="{ row }">
             <div class="status-indicator">
-              <span class="dot" :class="row.status === 'connected' ? 'bg-success' : 'bg-danger'"></span>
-              <span>{{ row.status === 'connected' ? '正常' : '异常' }}</span>
+              <span class="dot" :class="(row.status === 'active' || row.status === 'connected') ? 'bg-success' : 'bg-danger'"></span>
+              <span>{{ (row.status === 'active' || row.status === 'connected') ? '正常' : '异常' }}</span>
             </div>
           </template>
         </el-table-column>
@@ -126,7 +127,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
-          :total="filteredData.length"
+          :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -192,7 +193,12 @@
         <el-divider content-position="left">访问凭证</el-divider>
 
         <el-form-item label="AccessKey ID" prop="accessKeyId">
-          <el-input v-model="form.accessKeyId" placeholder="请输入 AccessKey ID">
+          <el-input 
+            v-model="form.accessKeyId" 
+            placeholder="请输入 AccessKey ID"
+            type="password"
+            show-password
+          >
             <template #prefix>
               <el-icon><Key /></el-icon>
             </template>
@@ -235,24 +241,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { 
   Search, Plus, RefreshRight, Edit, Delete, 
   Cloudy, Link, Warning, User, Key, Lock, CreditCard,
   Connection
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { getCloudConfigs, createCloudConfig, updateCloudConfig, deleteCloudConfig, connectTest } from '@/api/cloud-config'
 
 // 类型定义
 interface CloudConfig {
   id: number
-  accountName: string
-  accountId?: string
+  accountName: string // 对应后端 Name
+  accountId?: string  // 对应后端 AccountID
   provider: string
-  accessKeyId: string
-  accessKeySecret: string // 实际业务中不应在列表返回，这里仅作模拟
-  status: 'connected' | 'disconnected'
-  createTime: string
+  accessKeyId: string // 对应后端 AccessKey
+  accessKeySecret: string // 对应后端 SecretKey
+  status: 'active' | 'inactive' | 'error' | 'connected'
+  createTime: string // 对应后端 CreatedAt
   remark?: string
 }
 
@@ -262,47 +269,14 @@ const searchQuery = ref('')
 const providerFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
+const total = ref(0)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 
-// 模拟数据
-const configList = ref<CloudConfig[]>([
-  {
-    id: 1,
-    accountName: '腾讯云-生产环境',
-    accountId: '100023456789',
-    provider: 'Tencent',
-    accessKeyId: 'AKIDz8krbsJ5yKB6...',
-    accessKeySecret: '******',
-    status: 'connected',
-    createTime: '2023-12-01 10:30:00',
-    remark: '主要生产环境'
-  },
-  {
-    id: 2,
-    accountName: '阿里云-测试环境',
-    accountId: '156623456789',
-    provider: 'Aliyun',
-    accessKeyId: 'LTAI5t8krbsJ5yKB...',
-    accessKeySecret: '******',
-    status: 'connected',
-    createTime: '2023-12-05 14:20:00',
-    remark: '测试开发用'
-  },
-  {
-    id: 3,
-    accountName: 'AWS-海外业务',
-    accountId: '882345678901',
-    provider: 'AWS',
-    accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-    accessKeySecret: '******',
-    status: 'disconnected',
-    createTime: '2023-12-10 09:15:00',
-    remark: 'AccessKey已过期'
-  }
-])
+// 列表数据
+const configList = ref<CloudConfig[]>([])
 
 // 表单数据
 const form = reactive({
@@ -332,51 +306,73 @@ const rules = reactive<FormRules>({
   ]
 })
 
-// 计算属性：连接正常数量
-const connectedCount = computed(() => {
-  return configList.value.filter(item => item.status === 'connected').length
-})
+// 计算属性
+// const connectedCount = computed(() => {
+//   return configList.value.filter(item => item.status === 'active' || item.status === 'connected').length
+// })
 
-// 过滤后的数据
-const filteredData = computed(() => {
-  return configList.value.filter(item => {
-    const matchesSearch = 
-      item.accountName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (item.accountId && item.accountId.includes(searchQuery.value)) ||
-      item.accessKeyId.toLowerCase().includes(searchQuery.value.toLowerCase())
-    
-    const matchesProvider = providerFilter.value ? item.provider === providerFilter.value : true
-    
-    return matchesSearch && matchesProvider
-  })
-})
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).replace(/\//g, '-')
+}
 
-// 分页数据
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredData.value.slice(start, end)
-})
+// 获取列表
+const loadConfigs = async () => {
+  loading.value = true
+  try {
+    const res: any = await getCloudConfigs({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchQuery.value,
+      provider: providerFilter.value
+    })
+    
+    configList.value = res.list.map((item: any) => ({
+      id: item.id,
+      accountName: item.name,
+      accountId: item.account_id,
+      provider: item.provider,
+      accessKeyId: item.access_key,
+      status: item.status,
+      createTime: formatDateTime(item.created_at),
+      remark: item.remark
+    }))
+    total.value = res.total
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
 
 // 方法
 const getProviderLabel = (provider: string) => {
   const map: Record<string, string> = {
-    'Tencent': '腾讯云',
-    'Aliyun': '阿里云',
-    'AWS': 'AWS',
-    'Huawei': '华为云'
+    'tencent': '腾讯云',
+    'aliyun': '阿里云',
+    'aws': 'AWS',
+    'huawei': '华为云'
   }
-  return map[provider] || provider
+  return map[provider.toLowerCase()] || provider
 }
 
 const getProviderTagType = (provider: string) => {
   const map: Record<string, string> = {
-    'Tencent': '',
-    'Aliyun': 'warning',
-    'AWS': 'danger',
-    'Huawei': 'danger' // Element Plus tag types limited, reusing danger
+    'tencent': '',
+    'aliyun': 'warning',
+    'aws': 'danger',
+    'huawei': 'danger'
   }
-  return map[provider] as any || 'info'
+  return map[provider.toLowerCase()] as any || 'info'
 }
 
 const formatAccessKey = (key: string) => {
@@ -389,22 +385,22 @@ const formatAccessKey = (key: string) => {
 
 const handleSearch = () => {
   currentPage.value = 1
+  loadConfigs()
 }
 
 const handleRefresh = () => {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-    ElMessage.success('刷新成功')
-  }, 1000)
+  loadConfigs()
+  ElMessage.success('刷新成功')
 }
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val
+  loadConfigs()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
+  loadConfigs()
 }
 
 const handleAdd = () => {
@@ -421,12 +417,16 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
-const handleConnect = (row: CloudConfig) => {
+const handleConnect = async (row: CloudConfig) => {
   ElMessage.info(`正在连接 ${row.accountName}...`)
-  // 模拟连接测试
-  setTimeout(() => {
+  try {
+    await connectTest(row.id)
     ElMessage.success(`连接 ${row.accountName} 成功`)
-  }, 1500)
+    loadConfigs() // 重新加载列表以更新状态
+  } catch (error) {
+    // 错误已在拦截器处理
+    loadConfigs() // 失败也刷新一下状态
+  }
 }
 
 const handleEdit = (row: CloudConfig) => {
@@ -437,7 +437,7 @@ const handleEdit = (row: CloudConfig) => {
     accountId: row.accountId || '',
     provider: row.provider,
     accessKeyId: row.accessKeyId,
-    accessKeySecret: '******', // 模拟编辑时不显示真实密钥
+    accessKeySecret: '', // 编辑时不显示 SecretKey
     remark: row.remark || ''
   })
   dialogVisible.value = true
@@ -453,11 +453,16 @@ const handleDelete = (row: CloudConfig) => {
       type: 'warning',
       confirmButtonClass: 'el-button--danger'
     }
-  ).then(() => {
-    const index = configList.value.findIndex(item => item.id === row.id)
-    if (index !== -1) {
-      configList.value.splice(index, 1)
+  ).then(async () => {
+    try {
+      await deleteCloudConfig(row.id)
       ElMessage.success('删除成功')
+      if (configList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--
+      }
+      loadConfigs()
+    } catch (error) {
+      console.error(error)
     }
   }).catch(() => {})
 }
@@ -465,46 +470,40 @@ const handleDelete = (row: CloudConfig) => {
 const handleSubmit = async () => {
   if (!formRef.value) return
   
-  await formRef.value.validate((valid) => {
+  await formRef.value.validate(async (valid) => {
     if (valid) {
       submitting.value = true
-      setTimeout(() => {
-        const now = new Date().toLocaleString().replace(/\//g, '-')
+      try {
+        const data = {
+          name: form.accountName,
+          account_id: form.accountId,
+          provider: form.provider,
+          access_key: form.accessKeyId,
+          secret_key: form.accessKeySecret, // 后端已处理空值不更新的情况
+          remark: form.remark
+        }
+        
         if (isEdit.value) {
-          // 编辑逻辑
-          const index = configList.value.findIndex(item => item.id === form.id)
-          if (index !== -1 && configList.value[index]) {
-            Object.assign(configList.value[index]!, {
-              accountName: form.accountName,
-              accountId: form.accountId,
-              provider: form.provider,
-              accessKeyId: form.accessKeyId,
-              remark: form.remark
-            })
-            ElMessage.success('更新成功')
-          }
+          await updateCloudConfig(form.id, data)
+          ElMessage.success('更新成功')
         } else {
-          // 新增逻辑
-          const newId = Math.max(...configList.value.map(i => i.id), 0) + 1
-          configList.value.unshift({
-            id: newId,
-            accountName: form.accountName,
-            accountId: form.accountId,
-            provider: form.provider,
-            accessKeyId: form.accessKeyId,
-            accessKeySecret: form.accessKeySecret,
-            status: 'connected', // 模拟默认连接成功
-            createTime: now,
-            remark: form.remark
-          })
+          await createCloudConfig(data)
           ElMessage.success('添加成功')
         }
-        submitting.value = false
         dialogVisible.value = false
-      }, 800)
+        loadConfigs()
+      } catch (error) {
+        console.error(error)
+      } finally {
+        submitting.value = false
+      }
     }
   })
 }
+
+onMounted(() => {
+  loadConfigs()
+})
 </script>
 
 <style lang="scss" scoped>

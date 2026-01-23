@@ -253,13 +253,14 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { User, Search, Plus, RefreshRight, Edit, UserFilled, Message, Lock, Key } from '@element-plus/icons-vue'
+import { getUsers, createUser, updateUser, deleteUser } from '@/api/user'
 
 // 统计数据
 const statistics = computed(() => [
   { label: '总用户数', value: total.value, icon: User, type: 'primary' },
   { label: '活跃用户', value: userList.value.filter(u => u.status === 'active').length, icon: 'Check', type: 'success' },
-  { label: '管理员', value: userList.value.filter(u => u.role === 'admin').length, icon: Key, type: 'warning' },
-  { label: '本月新增', value: 12, icon: 'TrendCharts', type: 'info' },
+  { label: '管理员', value: userList.value.filter(u => u.role === 'admin' || u.role === 'super_admin').length, icon: Key, type: 'warning' },
+  { label: '本月新增', value: 0, icon: 'TrendCharts', type: 'info' },
 ])
 
 // 搜索表单
@@ -309,32 +310,25 @@ const userFormRules: FormRules = {
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
 
-// 模拟数据加载
-const loadUserList = () => {
+// 加载用户列表
+const loadUserList = async () => {
   loading.value = true
-  setTimeout(() => {
-    // 这里使用之前的模拟数据，实际应从API获取
-    if (userList.value.length === 0) {
-      userList.value = [
-        { id: 1, username: 'SuperAdmin', email: 'super@xiaozhi.ai', role: 'super_admin', status: 'active', createdAt: '2024-01-01T00:00:00.000Z' },
-        { id: 2, username: 'Admin', email: 'admin@example.com', role: 'admin', status: 'active', createdAt: '2024-01-01T10:00:00.000Z' },
-        { id: 3, username: 'User001', email: 'user1@example.com', role: 'user', status: 'active', createdAt: '2024-01-02T14:30:00.000Z' },
-        { id: 4, username: 'Guest', email: 'guest@example.com', role: 'guest', status: 'disabled', createdAt: '2024-01-03T09:15:00.000Z' },
-        // 生成更多模拟数据
-        ...Array.from({ length: 7 }).map((_, i) => ({
-          id: i + 5,
-          username: `User00${i + 2}`,
-          email: `user${i + 2}@example.com`,
-          role: 'user',
-          status: Math.random() > 0.2 ? 'active' : 'disabled',
-          createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString()
-        }))
-      ]
-    }
-    total.value = userList.value.length
+  try {
+    const res: any = await getUsers({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      username: searchForm.keyword,
+      status: searchForm.status,
+      role: searchForm.role
+    })
+    userList.value = res.list
+    total.value = res.total
+  } catch (error) {
+    console.error(error)
+  } finally {
     loading.value = false
     refreshLoading.value = false
-  }, 500)
+  }
 }
 
 const formatDateTime = (dateStr: string) => {
@@ -353,11 +347,8 @@ const formatDateTime = (dateStr: string) => {
 
 // 事件处理
 const handleSearch = () => {
-  loading.value = true
-  // 模拟搜索
-  setTimeout(() => {
-    loading.value = false
-  }, 300)
+  currentPage.value = 1
+  loadUserList()
 }
 
 const handleRefresh = () => {
@@ -393,36 +384,29 @@ const handleDelete = (row: any) => {
       cancelButtonText: '取消',
       type: 'warning',
     }
-  ).then(() => {
-    const index = userList.value.findIndex(u => u.id === row.id)
-    if (index > -1) {
-      userList.value.splice(index, 1)
-      total.value--
+  ).then(async () => {
+    try {
+      await deleteUser(row.id)
       ElMessage.success('删除成功')
+      if (userList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--
+      }
+      loadUserList()
+    } catch (error) {
+      console.error(error)
     }
   }).catch(() => {})
 }
 
 const handleBatchDelete = () => {
-  ElMessageBox.confirm(
-    `确定要删除选中的 ${selectedUsers.value.length} 个用户吗？`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    userList.value = userList.value.filter(u => !selectedUsers.value.includes(u))
-    total.value = userList.value.length
-    selectedUsers.value = []
-    ElMessage.success('批量删除成功')
-  }).catch(() => {})
+  // 暂时不支持批量删除
+  ElMessage.warning('暂不支持批量删除')
 }
 
 const handleStatusChange = (row: any) => {
   return new Promise<boolean>((resolve) => {
     const action = row.status === 'active' ? '禁用' : '启用'
+    const newStatus = row.status === 'active' ? 'disabled' : 'active'
     
     ElMessageBox.confirm(
       `确定要${action}用户 "${row.username}" 吗？`,
@@ -432,9 +416,14 @@ const handleStatusChange = (row: any) => {
         cancelButtonText: '取消',
         type: 'warning',
       }
-    ).then(() => {
-      ElMessage.success(`${action}成功`)
-      resolve(true)
+    ).then(async () => {
+      try {
+        await updateUser(row.id, { ...row, status: newStatus })
+        ElMessage.success(`${action}成功`)
+        resolve(true)
+      } catch (error) {
+        resolve(false)
+      }
     }).catch(() => {
       resolve(false)
     })
@@ -443,28 +432,24 @@ const handleStatusChange = (row: any) => {
 
 const handleSubmitUser = async () => {
   if (!userFormRef.value) return
-  await userFormRef.value.validate((valid) => {
+  await userFormRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true
-      setTimeout(() => {
+      try {
         if (isEdit.value) {
-          const index = userList.value.findIndex(u => u.id === userForm.id)
-          if (index > -1) {
-            Object.assign(userList.value[index], { ...userForm })
-          }
+          await updateUser(userForm.id, userForm)
           ElMessage.success('更新成功')
         } else {
-          userList.value.unshift({
-            ...userForm,
-            id: Date.now(),
-            createdAt: new Date().toISOString()
-          })
-          total.value++
+          await createUser(userForm)
           ElMessage.success('添加成功')
         }
         dialogVisible.value = false
+        loadUserList()
+      } catch (error) {
+        console.error(error)
+      } finally {
         submitLoading.value = false
-      }, 500)
+      }
     }
   })
 }

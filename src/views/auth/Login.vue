@@ -82,6 +82,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock, Monitor, Check } from '@element-plus/icons-vue'
+import axios from 'axios'
 
 const router = useRouter()
 const loginFormRef = ref<FormInstance>()
@@ -107,15 +108,28 @@ const loginRules = reactive<FormRules>({
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
-  await loginFormRef.value.validate((valid) => {
+  await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
-      // 模拟登录请求
-      setTimeout(() => {
-        loading.value = false
+      try {
+        const response = await axios.post('http://localhost:8081/api/v1/auth/login', {
+          username: loginForm.username,
+          password: loginForm.password
+        })
+        
+        const { token, user } = response.data
+        
+        // 存储 token 和用户信息
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
+        
         ElMessage.success('登录成功')
         router.push('/')
-      }, 1500)
+      } catch (error: any) {
+        ElMessage.error(error.response?.data?.error || '登录失败，请检查网络或账号密码')
+      } finally {
+        loading.value = false
+      }
     }
   })
 }

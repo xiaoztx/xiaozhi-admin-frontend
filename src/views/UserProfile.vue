@@ -24,8 +24,8 @@
                 </div>
               </el-upload>
             </div>
-            <h2 class="username">{{ profileForm.nickname || '管理员' }}</h2>
-            <p class="role-tag">超级管理员</p>
+            <h2 class="username">{{ profileForm.username || '管理员' }}</h2>
+            <p class="role-tag">{{ profileForm.role === 'super_admin' ? '超级管理员' : (profileForm.role === 'admin' ? '管理员' : '普通用户') }}</p>
           </div>
           
           <div class="profile-stats">
@@ -49,12 +49,12 @@
             <div class="info-item">
               <el-icon><User /></el-icon>
               <span class="label">用户名</span>
-              <span class="value">admin</span>
+              <span class="value">{{ profileForm.username }}</span>
             </div>
             <div class="info-item">
               <el-icon><Message /></el-icon>
               <span class="label">邮箱</span>
-              <span class="value">admin@xiaozhi.ai</span>
+              <span class="value">{{ profileForm.email }}</span>
             </div>
             <div class="info-item">
               <el-icon><Location /></el-icon>
@@ -64,7 +64,7 @@
             <div class="info-item">
               <el-icon><Timer /></el-icon>
               <span class="label">注册时间</span>
-              <span class="value">2024-01-01</span>
+              <span class="value">{{ profileForm.createdAt ? new Date(profileForm.createdAt).toLocaleDateString() : '-' }}</span>
             </div>
           </div>
         </el-card>
@@ -84,17 +84,18 @@
                 >
                   <el-row :gutter="20">
                     <el-col :span="12">
-                      <el-form-item label="昵称" prop="nickname">
-                        <el-input v-model="profileForm.nickname" />
+                      <el-form-item label="用户名" prop="username">
+                        <el-input v-model="profileForm.username" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                      <el-form-item label="手机号" prop="phone">
-                        <el-input v-model="profileForm.phone" />
+                      <el-form-item label="邮箱" prop="email">
+                        <el-input v-model="profileForm.email" />
                       </el-form-item>
                     </el-col>
                   </el-row>
                   
+                  <!-- 暂时保留简介字段，但不保存到后端 -->
                   <el-form-item label="个人简介">
                     <el-input 
                       v-model="profileForm.bio" 
@@ -194,10 +195,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Message, Location, Timer, Camera } from '@element-plus/icons-vue'
+import { getProfile, updateProfile } from '@/api/user'
 
 const activeTab = ref('info')
 const saving = ref(false)
@@ -208,16 +210,41 @@ const passwordFormRef = ref<FormInstance>()
 
 // 个人资料表单
 const profileForm = reactive({
-  avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-  nickname: '管理员',
-  phone: '13800138000',
-  bio: '负责系统整体维护和管理，专注于提升系统稳定性和用户体验。'
+  avatar: '',
+  nickname: '', // 这里实际上我们没有 nickname 字段，只有 username。但前端显示可以用 username
+  username: '',
+  email: '',
+  phone: '', // 后端没这个字段，暂时不管或者存在 bio? 后端只有 Username, Email, Role, Status, Avatar, Password
+  bio: '', // 后端没这个字段
+  role: '',
+  createdAt: ''
 })
 
 const profileRules = {
-  nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }]
+  // nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
+  // phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }]
+  // 手机号非必填，且后端暂无此字段，仅做前端展示或暂存
 }
+
+const loadProfile = async () => {
+  try {
+    const res: any = await getProfile()
+    const user = res.user
+    profileForm.username = user.username
+    profileForm.email = user.email
+    profileForm.role = user.role
+    profileForm.createdAt = user.createdAt
+    profileForm.avatar = user.avatar
+    // 暂时用 username 当 nickname
+    profileForm.nickname = user.username
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+})
 
 // 密码表单
 const passwordForm = reactive({
@@ -256,37 +283,58 @@ const activities = [
 // 方法
 const handleSaveProfile = async () => {
   if (!profileFormRef.value) return
-  await profileFormRef.value.validate((valid) => {
+  await profileFormRef.value.validate(async (valid) => {
     if (valid) {
       saving.value = true
-      setTimeout(() => {
-        saving.value = false
+      try {
+        await updateProfile({
+          username: profileForm.username,
+          email: profileForm.email
+        })
         ElMessage.success('个人资料已更新')
-      }, 1000)
+        loadProfile() // 重新加载以更新显示
+      } catch (error) {
+        console.error(error)
+      } finally {
+        saving.value = false
+      }
     }
   })
 }
 
 const handleAvatarChange = (file: any) => {
+  // 暂时只支持本地预览，不上传
   const reader = new FileReader()
   reader.onload = (e) => {
     profileForm.avatar = e.target?.result as string
-    ElMessage.success('头像更新成功')
+    ElMessage.success('头像更新成功（本地预览）')
   }
   reader.readAsDataURL(file.raw)
 }
 
 const handleUpdatePassword = async () => {
   if (!passwordFormRef.value) return
-  await passwordFormRef.value.validate((valid) => {
+  await passwordFormRef.value.validate(async (valid) => {
     if (valid) {
       passwordLoading.value = true
-      setTimeout(() => {
-        passwordLoading.value = false
+      try {
+        // 后端 updateProfile 支持修改密码
+        await updateProfile({
+          password: passwordForm.newPassword
+        })
         dialogVisible.value = false
         ElMessage.success('密码修改成功，请重新登录')
-        // 这里可以添加登出逻辑
-      }, 1500)
+        // 登出逻辑
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        setTimeout(() => {
+          location.href = '/login'
+        }, 1500)
+      } catch (error) {
+        console.error(error)
+      } finally {
+        passwordLoading.value = false
+      }
     }
   })
 }

@@ -67,7 +67,7 @@
       <!-- 表格区域 -->
       <el-table
         v-loading="loading"
-        :data="paginatedData"
+        :data="domainList"
         style="width: 100%"
         class="data-table"
         :header-cell-style="{ background: 'var(--bg-tertiary)' }"
@@ -126,7 +126,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
-          :total="filteredData.length"
+          :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -163,7 +163,7 @@
             <el-option
               v-for="item in credentialOptions"
               :key="item.id"
-              :label="`${item.accountName} (${item.provider})`"
+              :label="`${item.name} (${item.provider})`"
               :value="item.id"
             />
           </el-select>
@@ -211,6 +211,7 @@ import {
   Monitor, Check, List
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { getDomains, addDomain, deleteDomain, getValidCloudConfigs } from '@/api/dns'
 
 const router = useRouter()
 
@@ -219,16 +220,17 @@ interface DnsDomain {
   id: number
   domain: string
   credentialId: number
-  providerName: string // 用于展示，实际业务可能通过关联查询
-  status: 'active' | 'inactive' | 'locked'
+  providerName: string
+  status: string
   recordCount: number
   package: string
   lastOperationTime: string
+  remark?: string
 }
 
 interface CredentialOption {
   id: number
-  accountName: string
+  name: string
   provider: string
 }
 
@@ -238,50 +240,14 @@ const searchQuery = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
+const total = ref(0)
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 
-// 模拟凭证数据（实际应从 API 获取或 Store 获取）
-const credentialOptions = ref<CredentialOption[]>([
-  { id: 1, accountName: '腾讯云-生产环境', provider: 'Tencent' },
-  { id: 2, accountName: '阿里云-测试环境', provider: 'Aliyun' },
-  { id: 3, accountName: 'AWS-海外业务', provider: 'AWS' }
-])
-
-// 模拟域名数据
-const domainList = ref<DnsDomain[]>([
-  {
-    id: 1,
-    domain: 'xiaozhi.ai',
-    credentialId: 1,
-    providerName: 'Tencent',
-    status: 'active',
-    recordCount: 15,
-    package: '企业版',
-    lastOperationTime: '2024-01-20 14:30:00'
-  },
-  {
-    id: 2,
-    domain: 'example.com',
-    credentialId: 2,
-    providerName: 'Aliyun',
-    status: 'active',
-    recordCount: 8,
-    package: '免费版',
-    lastOperationTime: '2024-01-18 09:15:00'
-  },
-  {
-    id: 3,
-    domain: 'test-project.org',
-    credentialId: 1,
-    providerName: 'Tencent',
-    status: 'inactive',
-    recordCount: 0,
-    package: '免费版',
-    lastOperationTime: '2023-12-30 11:20:00'
-  }
-])
+// 列表数据
+const domainList = ref<DnsDomain[]>([])
+const credentialOptions = ref<CredentialOption[]>([])
 
 // 表单数据
 const form = reactive({
@@ -296,20 +262,13 @@ const validateDomain = (_rule: any, value: string, callback: any) => {
     return callback(new Error('请输入域名'))
   }
   
-  // 简单的正则验证：字母数字连字符 + 点 + 字母
-  // 排除 www. 开头
   if (value.startsWith('www.')) {
     return callback(new Error('请输入主域名，不要包含 www'))
   }
   
-  // 检查点的数量，简单的二级域名判断 (example.com 是1个点, a.b.com 是2个点)
-  // 这里做一个宽松的检查，主要为了提示用户
   const parts = value.split('.')
   if (parts.length < 2) {
     return callback(new Error('域名格式不正确'))
-  }
-  if (parts.length > 3) { // 允许 a.co.uk 这种3段的，更多段可能是子域名
-     return callback(new Error('疑似子域名，请输入主域名'))
   }
   
   const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/
@@ -331,91 +290,141 @@ const rules = reactive<FormRules>({
 })
 
 // 计算属性
-const activeCount = computed(() => domainList.value.filter(d => d.status === 'active').length)
+const activeCount = computed(() => domainList.value.filter(d => d.status === 'ENABLE' || d.status === 'active').length)
 const totalRecords = computed(() => domainList.value.reduce((sum, d) => sum + d.recordCount, 0))
 
-const filteredData = computed(() => {
-  return domainList.value.filter(item => {
-    const matchesSearch = item.domain.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesStatus = statusFilter.value ? item.status === statusFilter.value : true
-    return matchesSearch && matchesStatus
-  })
-})
+// 加载数据
+const loadDomains = async () => {
+  loading.value = true
+  try {
+    const res: any = await getDomains({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchQuery.value
+    })
+    
+    domainList.value = res.list.map((item: any) => ({
+      id: item.id,
+      domain: item.domain_name,
+      credentialId: item.cloud_config_id,
+      providerName: item.cloud_config?.provider || 'Unknown',
+      status: item.status || 'Unknown',
+      recordCount: item.record_count,
+      package: item.remark || '-',
+      lastOperationTime: new Date(item.created_at).toLocaleString()
+    }))
+    total.value = res.total
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredData.value.slice(start, end)
-})
+// 加载可用凭证
+const loadCredentials = async () => {
+  try {
+    const res: any = await getValidCloudConfigs()
+    credentialOptions.value = res.list
+  } catch (error) {
+    console.error(error)
+  }
+}
 
 // 方法
 const getStatusLabel = (status: string) => {
   const map: Record<string, string> = {
-    active: '正常',
-    inactive: '暂停',
-    locked: '锁定'
+    'ENABLE': '正常',
+    'PAUSE': '暂停',
+    'SPAM': '封禁',
+    'LOCK': '锁定',
+    'active': '正常', // 兼容旧数据
+    'inactive': '暂停',
+    'locked': '锁定',
+    'UNKNOWN': '未知'
   }
   return map[status] || status
 }
 
 const getStatusType = (status: string) => {
   const map: Record<string, string> = {
-    active: 'success',
-    inactive: 'info',
-    locked: 'danger'
+    'ENABLE': 'success',
+    'active': 'success',
+    'PAUSE': 'warning',
+    'inactive': 'warning',
+    'SPAM': 'danger',
+    'LOCK': 'danger',
+    'locked': 'danger'
   }
   return map[status] as any || 'info'
 }
 
 const handleSearch = () => {
   currentPage.value = 1
+  loadDomains()
 }
 
 const handleRefresh = () => {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-    ElMessage.success('刷新成功')
-  }, 1000)
+  loadDomains()
+  ElMessage.success('刷新成功')
 }
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val
+  loadDomains()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
+  loadDomains()
 }
 
-const handleAdd = () => {
-  form.credentialId = undefined
+const handleAdd = async () => {
+  // 先检查是否有可用凭证
+  await loadCredentials()
+  if (credentialOptions.value.length === 0) {
+    ElMessageBox.alert('您还没有有效的云服务商凭证，请先前往"云配置管理"添加并连接验证。', '无法添加域名', {
+      confirmButtonText: '去添加凭证',
+      callback: (action: any) => {
+        if (action === 'confirm') {
+          router.push('/cloud-config')
+        }
+      }
+    })
+    return
+  }
+
+  form.credentialId = credentialOptions.value.length === 1 ? credentialOptions.value[0]?.id : undefined
   form.domain = ''
   form.remark = ''
   dialogVisible.value = true
 }
 
-const handleManage = (row: DnsDomain) => {
-  router.push({ 
-    name: 'dns-records', 
-    params: { domain: row.domain } 
-  })
+const handleManage = (_row: DnsDomain) => {
+  // 解析功能暂不做
+  ElMessage.info('解析功能开发中')
 }
 
 const handleDelete = (row: DnsDomain) => {
   ElMessageBox.confirm(
-    `确定要删除域名 "${row.domain}" 及其所有解析记录吗？此操作不可恢复。`,
-    '警告',
+    `确定要删除域名 "${row.domain}" 吗？\n注意：此操作仅删除本地数据库记录，不会删除云服务商处的域名解析。`,
+    '删除确认',
     {
-      confirmButtonText: '确定删除',
+      confirmButtonText: '仅删除本地记录',
       cancelButtonText: '取消',
       type: 'warning',
       confirmButtonClass: 'el-button--danger'
     }
-  ).then(() => {
-    const index = domainList.value.findIndex(d => d.id === row.id)
-    if (index !== -1) {
-      domainList.value.splice(index, 1)
+  ).then(async () => {
+    try {
+      await deleteDomain(row.id)
       ElMessage.success('删除成功')
+      if (domainList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--
+      }
+      loadDomains()
+    } catch (error) {
+      console.error(error)
     }
   }).catch(() => {})
 }
@@ -423,33 +432,41 @@ const handleDelete = (row: DnsDomain) => {
 const handleSubmit = async () => {
   if (!formRef.value) return
   
-  await formRef.value.validate((valid) => {
+  await formRef.value.validate(async (valid) => {
     if (valid) {
       submitting.value = true
-      setTimeout(() => {
-        // 模拟添加
-        const credential = credentialOptions.value.find(c => c.id === form.credentialId)
-        domainList.value.unshift({
-          id: Date.now(),
-          domain: form.domain,
-          credentialId: form.credentialId!,
-          providerName: credential?.provider || 'Unknown',
-          status: 'active',
-          recordCount: 0,
-          package: '免费版',
-          lastOperationTime: new Date().toLocaleString().replace(/\//g, '-')
+      try {
+        await addDomain({
+          cloud_config_id: form.credentialId,
+          domain_name: form.domain,
+          remark: form.remark
         })
-        
         ElMessage.success('添加域名成功')
         dialogVisible.value = false
+        loadDomains()
+      } catch (error: any) {
+        // 如果是特定错误，弹出详细提示
+        if (error.response && error.response.data && error.response.data.error) {
+           const errMsg = error.response.data.error
+           if (errMsg.includes("当前域名未添加解析")) {
+             ElMessageBox.alert('该域名尚未在您的腾讯云账号下添加解析，无法导入。请先在腾讯云控制台添加该域名。', '添加失败', {
+               type: 'error',
+               confirmButtonText: '知道了'
+             })
+             return
+           }
+        }
+        console.error(error)
+        // 错误信息已由拦截器显示，这里不再重复，或者是具体的业务错误
+      } finally {
         submitting.value = false
-      }, 800)
+      }
     }
   })
 }
 
 onMounted(() => {
-  // 可以在这里加载真实数据
+  loadDomains()
 })
 </script>
 
