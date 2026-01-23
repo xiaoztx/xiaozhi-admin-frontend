@@ -103,7 +103,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock, Monitor, Check, Message } from '@element-plus/icons-vue'
-import axios from 'axios'
 
 const router = useRouter()
 const registerFormRef = ref<FormInstance>()
@@ -160,23 +159,15 @@ const registerRules = reactive<FormRules>({
 const handleRegister = async () => {
   if (!registerFormRef.value) return
   
-  await registerFormRef.value.validate(async (valid) => {
+  await registerFormRef.value.validate((valid) => {
     if (valid) {
       loading.value = true
-      try {
-        await axios.post('http://localhost:8081/api/v1/auth/register', {
-          username: registerForm.username,
-          password: registerForm.password,
-          email: registerForm.email
-        })
-        
+      // 模拟注册请求
+      setTimeout(() => {
+        loading.value = false
         ElMessage.success('注册成功，请登录')
         router.push('/login')
-      } catch (error: any) {
-        ElMessage.error(error.response?.data?.error || '注册失败，请检查网络或重试')
-      } finally {
-        loading.value = false
-      }
+      }, 1500)
     }
   })
 }

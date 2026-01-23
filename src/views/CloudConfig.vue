@@ -248,7 +248,7 @@ import {
   Connection
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getCloudConfigs, createCloudConfig, updateCloudConfig, deleteCloudConfig, connectTest } from '@/api/cloud-config'
+import { getCloudConfigs, createCloudConfig, updateCloudConfig, deleteCloudConfig, connectTest } from '../api/cloud-config'
 
 // 类型定义
 interface CloudConfig {

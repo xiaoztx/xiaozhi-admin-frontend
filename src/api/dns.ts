@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from '../utils/request'
 
 export const getDomains = (params: any) => {
   return request({

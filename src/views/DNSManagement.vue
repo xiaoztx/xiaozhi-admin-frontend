@@ -290,7 +290,11 @@ const rules = reactive<FormRules>({
 })
 
 // 计算属性
-const activeCount = computed(() => domainList.value.filter(d => d.status === 'ENABLE' || d.status === 'active').length)
+const activeCount = computed(() => domainList.value.filter(d => {
+  if (!d.status) return false
+  const s = d.status.toUpperCase()
+  return s === 'ENABLE' || s === 'ACTIVE'
+}).length)
 const totalRecords = computed(() => domainList.value.reduce((sum, d) => sum + d.recordCount, 0))
 
 // 加载数据
@@ -333,30 +337,34 @@ const loadCredentials = async () => {
 
 // 方法
 const getStatusLabel = (status: string) => {
+  if (!status) return '未知'
+  const normalizedStatus = status.toUpperCase()
   const map: Record<string, string> = {
     'ENABLE': '正常',
     'PAUSE': '暂停',
     'SPAM': '封禁',
     'LOCK': '锁定',
-    'active': '正常', // 兼容旧数据
-    'inactive': '暂停',
-    'locked': '锁定',
+    'ACTIVE': '正常', // 兼容旧数据
+    'INACTIVE': '暂停',
+    'LOCKED': '锁定',
     'UNKNOWN': '未知'
   }
-  return map[status] || status
+  return map[normalizedStatus] || status
 }
 
 const getStatusType = (status: string) => {
+  if (!status) return 'info'
+  const normalizedStatus = status.toUpperCase()
   const map: Record<string, string> = {
     'ENABLE': 'success',
-    'active': 'success',
+    'ACTIVE': 'success',
     'PAUSE': 'warning',
-    'inactive': 'warning',
+    'INACTIVE': 'warning',
     'SPAM': 'danger',
     'LOCK': 'danger',
-    'locked': 'danger'
+    'LOCKED': 'danger'
   }
-  return map[status] as any || 'info'
+  return map[normalizedStatus] as any || 'info'
 }
 
 const handleSearch = () => {
