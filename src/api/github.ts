@@ -52,3 +52,33 @@ export const deleteGithubAccount = (id: number) => {
     method: 'delete'
   })
 }
+
+// 监控相关 API
+export const getGithubMonitors = () => {
+  return request({
+    url: '/github/monitors',
+    method: 'get'
+  })
+}
+
+export const addGithubMonitor = (data: { url: string; remark?: string }) => {
+  return request({
+    url: '/github/monitors',
+    method: 'post',
+    data
+  })
+}
+
+export const deleteGithubMonitor = (id: number) => {
+  return request({
+    url: `/github/monitors/${id}`,
+    method: 'delete'
+  })
+}
+
+export const syncGithubMonitor = (id: number) => {
+  return request({
+    url: `/github/monitors/${id}/sync`,
+    method: 'post'
+  })
+}
