@@ -27,7 +27,7 @@
              <div class="chart-main">
                <div class="chart-header">
                  <span class="total-count">{{ totalContributions }}</span>
-                 <span class="meta-text">contributions in {{ currentYear }}</span>
+                 <span class="meta-text">次贡献在 {{ currentYear }} 年</span>
                </div>
                
                <div class="heatmap-container" v-if="contributionData">
@@ -40,19 +40,24 @@
                       <!-- 星期 + 格子 -->
                       <div class="grid-body">
                         <div class="days-col">
-                          <span class="day-label">Mon</span>
-                          <span class="day-label">Wed</span>
-                          <span class="day-label">Fri</span>
+                          <span class="day-label">一</span>
+                          <span class="day-label">三</span>
+                          <span class="day-label">五</span>
                         </div>
                         <div class="weeks-row">
                           <div v-for="(week, wIndex) in contributionData.weeks" :key="wIndex" class="week-col">
-                            <div 
+                            <el-tooltip
                               v-for="(day, dIndex) in week.contributionDays" 
-                              :key="dIndex" 
-                              class="day-cell"
-                              :style="{ backgroundColor: day.color || '#ebedf0' }"
-                              :title="`${day.contributionCount} contributions on ${day.date}`"
-                            ></div>
+                              :key="dIndex"
+                              effect="dark"
+                              :content="`${day.contributionCount} 次贡献于 ${dayjs(day.date).format('MM月DD日')}`"
+                              placement="top"
+                            >
+                              <div 
+                                class="day-cell"
+                                :style="{ backgroundColor: day.color || '#ebedf0' }"
+                              ></div>
+                            </el-tooltip>
                           </div>
                         </div>
                       </div>
@@ -60,13 +65,13 @@
                  </div>
                  
                  <div class="legend-row">
-                   <span>Less</span>
+                   <span>少</span>
                    <div class="legend-cell" style="background-color: #ebedf0"></div>
                    <div class="legend-cell" style="background-color: #9be9a8"></div>
                    <div class="legend-cell" style="background-color: #40c463"></div>
                    <div class="legend-cell" style="background-color: #30a14e"></div>
                    <div class="legend-cell" style="background-color: #216e39"></div>
-                   <span>More</span>
+                   <span>多</span>
                  </div>
                </div>
 
@@ -122,6 +127,8 @@ import { useRouter } from 'vue-router'
 import { DataLine, Monitor, Plus } from '@element-plus/icons-vue'
 import { getGithubAccounts, getContributions } from '@/api/github'
 import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn' // 导入中文语言包
+dayjs.locale('zh-cn') // 设置全局语言为中文
 
 const router = useRouter()
 const loading = ref(false)
