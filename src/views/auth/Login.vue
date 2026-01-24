@@ -63,6 +63,14 @@
               登录
             </el-button>
 
+            <el-button 
+              class="guest-btn" 
+              :loading="guestLoading" 
+              @click="handleGuestLogin"
+            >
+              <el-icon class="mr-1"><User /></el-icon> 游客访问
+            </el-button>
+
             <div class="auth-footer">
               还没有账户？ 
               <el-link type="primary" :underline="false" @click="$router.push('/register')">
@@ -87,6 +95,7 @@ import axios from 'axios'
 const router = useRouter()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
+const guestLoading = ref(false)
 
 const loginForm = reactive({
   username: '',
@@ -132,6 +141,26 @@ const handleLogin = async () => {
       }
     }
   })
+}
+
+const handleGuestLogin = async () => {
+  guestLoading.value = true
+  try {
+    const response = await axios.post('http://localhost:8081/api/v1/auth/guest-login')
+    
+    const { token, user } = response.data
+    
+    // 存储 token 和用户信息
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
+    
+    ElMessage.success('游客登录成功')
+    router.push('/')
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.error || '游客登录失败')
+  } finally {
+    guestLoading.value = false
+  }
 }
 </script>
 
@@ -285,7 +314,15 @@ const handleLogin = async () => {
           width: 100%;
           height: 44px;
           font-size: 16px;
+          margin-bottom: 16px;
+        }
+
+        .guest-btn {
+          width: 100%;
+          height: 44px;
+          font-size: 16px;
           margin-bottom: 24px;
+          margin-left: 0;
         }
 
         .auth-footer {
