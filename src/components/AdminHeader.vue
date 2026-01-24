@@ -67,7 +67,7 @@
         <div class="user-info">
           <el-avatar
             size="small"
-            src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+            :src="userAvatar"
           />
           <span class="username">{{ username }}</span>
           <el-icon class="arrow-icon"><ArrowDown /></el-icon>
@@ -94,9 +94,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Menu,
@@ -113,22 +114,10 @@ import {
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 
-const username = ref('管理员')
-
-onMounted(() => {
-  const userStr = localStorage.getItem('user')
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr)
-      if (user.username) {
-        username.value = user.username
-      }
-    } catch (e) {
-      console.error('Failed to parse user info', e)
-    }
-  }
-})
+const username = computed(() => userStore.userInfo.username || '管理员')
+const userAvatar = computed(() => userStore.userInfo.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
 
 const isDark = computed(() => themeStore.isDark)
 const isSidebarCollapsed = computed(() => themeStore.isSidebarCollapsed)
@@ -195,8 +184,7 @@ const handleLogout = async () => {
     })
     
     // 清除本地存储
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    userStore.clearUser()
     
     ElMessage.success('已退出登录')
     router.push('/login')

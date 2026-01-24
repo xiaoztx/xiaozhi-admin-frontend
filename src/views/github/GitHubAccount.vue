@@ -10,7 +10,7 @@
           <el-button type="success" @click="handleQuickConnect" disabled>
             <el-icon class="mr-1"><Connection /></el-icon>一键连接(请针对单个账户操作)
           </el-button>
-          <el-button @click="handleRefresh">
+          <el-button :loading="loading" @click="handleRefresh">
             <el-icon class="mr-1"><RefreshRight /></el-icon>刷新
           </el-button>
         </div>
@@ -189,7 +189,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { 
-  Search, Plus, RefreshRight, Edit, Delete, Connection, Star, User, Key
+  Search, Plus, RefreshRight, Edit, Delete, Connection, Star, User, Key, Refresh
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { getGithubAccounts, addGithubAccount, updateGithubAccount, deleteGithubAccount, connectGithubAccount, setPrimaryAccount } from '@/api/github'
@@ -280,8 +280,45 @@ const handleSearch = () => {
   currentPage.value = 1
 }
 
-const handleRefresh = () => {
-  loadData()
+const handleRefresh = async () => {
+  loading.value = true
+  try {
+    // 1. 获取最新列表
+    await loadData()
+    
+    // 2. 筛选出已连接(active)的账户
+    const activeAccounts = accountList.value.filter(acc => acc.status === 'active')
+    
+    if (activeAccounts.length > 0) {
+      ElMessage.info(`正在同步 ${activeAccounts.length} 个账户...`)
+      
+      // 3. 并发同步所有 active 账户
+      // 使用 Promise.allSettled 确保某个失败不影响其他
+      const results = await Promise.allSettled(
+        activeAccounts.map(acc => connectGithubAccount(acc.id))
+      )
+      
+      // 4. 统计结果
+      const successCount = results.filter(r => r.status === 'fulfilled').length
+      const failCount = results.filter(r => r.status === 'rejected').length
+      
+      if (failCount > 0) {
+        ElMessage.warning(`同步完成：成功 ${successCount} 个，失败 ${failCount} 个`)
+      } else {
+        ElMessage.success(`全部 ${successCount} 个账户同步成功`)
+      }
+      
+      // 5. 再次加载最新数据以更新 UI
+      await loadData()
+    } else {
+      ElMessage.success('列表已刷新，暂无需要同步的账户')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('刷新失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleQuickConnect = () => {
@@ -292,7 +329,8 @@ const handleConnect = async (row: GithubAccount) => {
   connectLoading.value = true
   try {
     await connectGithubAccount(row.id)
-    ElMessage.success('连接成功，数据已同步')
+    const msg = row.status === 'active' ? '同步成功' : '连接成功，数据已同步'
+    ElMessage.success(msg)
     loadData()
   } catch (error) {
     console.error(error)

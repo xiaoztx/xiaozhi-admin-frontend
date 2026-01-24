@@ -5,25 +5,17 @@
       <el-col :span="8">
         <el-card shadow="never" class="profile-card">
           <div class="profile-header">
-            <div class="avatar-container">
-              <el-avatar 
-                :size="100" 
-                :src="profileForm.avatar"
-                class="profile-avatar"
-              />
-              <el-upload
-                class="avatar-uploader"
-                action="#"
-                :show-file-list="false"
-                :auto-upload="false"
-                :on-change="handleAvatarChange"
-              >
-                <div class="upload-mask">
+              <div class="profile-avatar-wrapper" @click="avatarDialogVisible = true">
+                <el-avatar 
+                  :size="100" 
+                  :src="profileForm.avatar" 
+                  class="profile-avatar"
+                />
+                <div class="avatar-mask">
                   <el-icon><Camera /></el-icon>
-                  <span>更换</span>
+                  <span>更换头像</span>
                 </div>
-              </el-upload>
-            </div>
+              </div>
             <h2 class="username">{{ profileForm.username || '管理员' }}</h2>
             <p class="role-tag">{{ profileForm.role === 'super_admin' ? '超级管理员' : (profileForm.role === 'admin' ? '管理员' : '普通用户') }}</p>
           </div>
@@ -191,19 +183,70 @@
         </span>
       </template>
     </el-dialog>
+    <!-- 修改头像对话框 -->
+    <el-dialog
+      v-model="avatarDialogVisible"
+      title="更换头像"
+      width="500px"
+      align-center
+    >
+      <el-tabs v-model="avatarType" class="avatar-tabs">
+        <el-tab-pane label="本地上传" name="upload">
+          <div class="avatar-upload-container">
+            <el-upload
+              class="avatar-uploader"
+              action="#"
+              :show-file-list="false"
+              :auto-upload="false"
+              :on-change="handleFileChange"
+            >
+              <img v-if="uploadPreviewUrl" :src="uploadPreviewUrl" class="avatar" />
+              <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+            </el-upload>
+            <div class="upload-tip">支持 JPG/PNG 格式，大小不超过 2MB</div>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="网络图片" name="url">
+          <el-form label-position="top">
+            <el-form-item label="网络图片地址">
+              <el-input v-model="newAvatarUrl" placeholder="请输入图片 URL" clearable />
+            </el-form-item>
+            <div class="avatar-preview" v-if="newAvatarUrl">
+              <p>预览</p>
+              <el-avatar :size="100" :src="newAvatarUrl" />
+            </div>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="avatarDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleUpdateAvatar">
+            确定
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { User, Message, Location, Timer, Camera } from '@element-plus/icons-vue'
+import type { FormInstance, FormRules, UploadFile } from 'element-plus'
+import { User, Message, Location, Timer, Camera, Plus } from '@element-plus/icons-vue'
 import { getProfile, updateProfile } from '@/api/user'
 
+const userStore = useUserStore()
 const activeTab = ref('info')
 const saving = ref(false)
 const dialogVisible = ref(false)
+const avatarDialogVisible = ref(false)
+const avatarType = ref('upload')
+const newAvatarUrl = ref('')
+const uploadPreviewUrl = ref('')
 const passwordLoading = ref(false)
 const profileFormRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
@@ -237,6 +280,9 @@ const loadProfile = async () => {
     profileForm.avatar = user.avatar
     // 暂时用 username 当 nickname
     profileForm.nickname = user.username
+    
+    // 更新全局状态
+    userStore.setUser(user)
   } catch (error) {
     console.error(error)
   }
@@ -289,7 +335,8 @@ const handleSaveProfile = async () => {
       try {
         await updateProfile({
           username: profileForm.username,
-          email: profileForm.email
+          email: profileForm.email,
+          avatar: profileForm.avatar
         })
         ElMessage.success('个人资料已更新')
         loadProfile() // 重新加载以更新显示
@@ -302,15 +349,72 @@ const handleSaveProfile = async () => {
   })
 }
 
-const handleAvatarChange = (file: any) => {
-  // 暂时只支持本地预览，不上传
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    profileForm.avatar = e.target?.result as string
-    ElMessage.success('头像更新成功（本地预览）')
+const handleFileChange = (uploadFile: UploadFile) => {
+  const file = uploadFile.raw
+  if (!file) return
+
+  const isJPGOrPNG = file.type === 'image/jpeg' || file.type === 'image/png'
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isJPGOrPNG) {
+    ElMessage.error('上传头像图片只能是 JPG/PNG 格式!')
+    return
   }
-  reader.readAsDataURL(file.raw)
+  if (!isLt2M) {
+    ElMessage.error('上传头像图片大小不能超过 2MB!')
+    return
+  }
+
+  // 转换为 Base64 进行预览和上传
+  const reader = new FileReader()
+  reader.readAsDataURL(file)
+  reader.onload = () => {
+    uploadPreviewUrl.value = reader.result as string
+  }
 }
+
+const handleUpdateAvatar = () => {
+  let finalAvatar = ''
+  
+  if (avatarType.value === 'upload') {
+    if (!uploadPreviewUrl.value) {
+      ElMessage.warning('请选择图片')
+      return
+    }
+    finalAvatar = uploadPreviewUrl.value
+  } else {
+    if (!newAvatarUrl.value) {
+      ElMessage.warning('请输入图片地址')
+      return
+    }
+    finalAvatar = newAvatarUrl.value
+  }
+  
+  profileForm.avatar = finalAvatar
+  avatarDialogVisible.value = false
+  // 自动保存
+  handleSaveProfile()
+}
+
+watch(avatarDialogVisible, (val) => {
+  if (val) {
+    // 重置状态
+    avatarType.value = 'upload'
+    newAvatarUrl.value = ''
+    uploadPreviewUrl.value = ''
+    
+    // 如果当前有头像，根据内容判断是 URL 还是 Base64，回显到对应 tab
+    if (profileForm.avatar) {
+      if (profileForm.avatar.startsWith('data:image')) {
+        avatarType.value = 'upload'
+        uploadPreviewUrl.value = profileForm.avatar
+      } else {
+        avatarType.value = 'url'
+        newAvatarUrl.value = profileForm.avatar
+      }
+    }
+  }
+})
 
 const handleUpdatePassword = async () => {
   if (!passwordFormRef.value) return
@@ -325,8 +429,7 @@ const handleUpdatePassword = async () => {
         dialogVisible.value = false
         ElMessage.success('密码修改成功，请重新登录')
         // 登出逻辑
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        userStore.clearUser()
         setTimeout(() => {
           location.href = '/login'
         }, 1500)
@@ -351,55 +454,45 @@ const handleUpdatePassword = async () => {
       text-align: center;
       padding: 20px 0;
 
-      .avatar-container {
+      .profile-avatar-wrapper {
         position: relative;
         width: 100px;
         height: 100px;
         margin: 0 auto 16px;
+        border-radius: 50%;
+        overflow: hidden;
+        cursor: pointer;
         
         .profile-avatar {
           border: 4px solid var(--bg-secondary);
           width: 100%;
           height: 100%;
+          display: block;
         }
 
-        .avatar-uploader {
+        .avatar-mask {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 12px;
           opacity: 0;
           transition: opacity 0.3s;
-          cursor: pointer;
-          border-radius: 50%;
-          overflow: hidden;
 
-          :deep(.el-upload) {
-            width: 100%;
-            height: 100%;
-            border: none;
-          }
-
-          .upload-mask {
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-
-            .el-icon {
-              font-size: 24px;
-              margin-bottom: 4px;
-            }
+          .el-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
           }
         }
 
-        &:hover .avatar-uploader {
+        &:hover .avatar-mask {
           opacity: 1;
         }
       }
@@ -518,6 +611,63 @@ const handleUpdatePassword = async () => {
           font-size: 13px;
           color: var(--text-secondary);
         }
+      }
+    }
+  }
+  
+  .avatar-tabs {
+    .avatar-upload-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+      
+      .avatar-uploader {
+        border: 1px dashed var(--border-color);
+        border-radius: 6px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: var(--el-transition-duration-fast);
+        
+        &:hover {
+          border-color: var(--color-primary);
+        }
+        
+        .avatar-uploader-icon {
+          font-size: 28px;
+          color: #8c939d;
+          width: 178px;
+          height: 178px;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .avatar {
+          width: 178px;
+          height: 178px;
+          display: block;
+          object-fit: cover;
+        }
+      }
+      
+      .upload-tip {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 10px;
+      }
+    }
+    
+    .avatar-preview {
+      margin-top: 20px;
+      text-align: center;
+      
+      p {
+        margin-bottom: 10px;
+        color: var(--text-secondary);
+        font-size: 14px;
       }
     }
   }
