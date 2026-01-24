@@ -48,6 +48,7 @@
   --border-medium: #dadce0;
   --border-heavy: #bdc1c6;
   --border-focus: #1a73e8;
+  --border-primary: #dadce0; // 新增：基础边框色 (对应 medium)
 
   // 阴影系统（企业级）
   --shadow-sm: 0 1px 3px rgba(60, 64, 67, 0.08), 0 1px 2px rgba(60, 64, 67, 0.16);
@@ -212,6 +213,7 @@ html, body {
   --border-light: #3c4043;
   --border-medium: #5f6368;
   --border-heavy: #80868b;
+  --border-primary: #5f6368; // 新增：暗色模式基础边框色 (对应 medium)
 
   // 企业级深色阴影（更柔和）
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -226,7 +228,7 @@ html, body {
   // Element Plus 组件适配
   .el-card {
     background-color: var(--bg-secondary);
-    border-color: var(--border-primary);
+    border-color: var(--border-primary); // 使用暗色边框变量
     color: var(--text-primary);
 
     .el-card__header {

@@ -16,5 +16,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src/**/*.vue", "src/**/*.ts", "src/**/*.tsx"]
+  "include": [
+    "src/**/*.vue",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
 }

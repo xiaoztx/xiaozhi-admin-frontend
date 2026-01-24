@@ -556,6 +556,7 @@ body .el-message {
   .el-table {
     background-color: var(--bg-primary);
     color: var(--text-primary);
+    --el-table-border-color: var(--border-medium); // 修复表格边框颜色
 
     .el-table__header th {
       background-color: var(--bg-tertiary);
@@ -584,7 +585,7 @@ body .el-message {
   // 卡片暗色模式适配
   .el-card {
     background-color: var(--bg-secondary);
-    border-color: var(--border-medium);
+    border-color: var(--border-medium); // 使用暗色模式下的边框颜色
 
     .el-card__header {
       background-color: var(--bg-tertiary);
@@ -629,12 +630,22 @@ body .el-message {
     }
 
     .el-pagination__prev,
-    .el-pagination__next {
+    .el-pagination__next,
+    button.btn-prev,
+    button.btn-next {
       background-color: var(--bg-secondary);
       border-color: var(--border-medium);
+      color: var(--text-secondary);
 
       &:hover {
         background-color: var(--bg-tertiary);
+        border-color: var(--border-light);
+        color: var(--color-primary);
+      }
+
+      &:disabled {
+        background-color: var(--bg-tertiary);
+        color: var(--text-disabled);
         border-color: var(--border-light);
       }
     }
@@ -752,7 +763,7 @@ body .el-message {
     .el-checkbox {
       .el-checkbox__inner {
         background-color: var(--bg-secondary); // 比表头背景稍亮
-        border-color: var(--text-disabled); // 边框颜色加深
+        border-color: var(--border-medium); // 使用正确的边框色变量，而不是文字色
         
         &:hover {
           border-color: var(--color-primary);
