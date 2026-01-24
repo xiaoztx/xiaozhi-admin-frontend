@@ -85,6 +85,9 @@ router.beforeEach((to, _from, next) => {
 
   if (requiresAuth && !token) {
     next('/login')
+  } else if (token && to.path === '/login') {
+    // 如果已登录，访问登录页重定向到首页
+    next('/')
   } else {
     next()
   }

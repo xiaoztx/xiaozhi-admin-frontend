@@ -69,7 +69,7 @@
             size="small"
             src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
           />
-          <span class="username">管理员</span>
+          <span class="username">{{ username }}</span>
           <el-icon class="arrow-icon"><ArrowDown /></el-icon>
         </div>
         <template #dropdown>
@@ -94,8 +94,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -111,7 +111,24 @@ import {
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
+const router = useRouter()
 const themeStore = useThemeStore()
+
+const username = ref('管理员')
+
+onMounted(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr)
+      if (user.username) {
+        username.value = user.username
+      }
+    } catch (e) {
+      console.error('Failed to parse user info', e)
+    }
+  }
+})
 
 const isDark = computed(() => themeStore.isDark)
 const isSidebarCollapsed = computed(() => themeStore.isSidebarCollapsed)
@@ -176,9 +193,13 @@ const handleLogout = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    // 这里可以添加登出逻辑
+    
+    // 清除本地存储
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    
     ElMessage.success('已退出登录')
-    // router.push('/login')
+    router.push('/login')
   } catch {
     // 用户取消操作
   }

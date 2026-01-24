@@ -7,8 +7,8 @@
           <el-button type="primary" @click="handleAdd">
             <el-icon class="mr-1"><Plus /></el-icon>新增账户
           </el-button>
-          <el-button type="success" @click="handleQuickConnect">
-            <el-icon class="mr-1"><Connection /></el-icon>一键连接
+          <el-button type="success" @click="handleQuickConnect" disabled>
+            <el-icon class="mr-1"><Connection /></el-icon>一键连接(请针对单个账户操作)
           </el-button>
           <el-button @click="handleRefresh">
             <el-icon class="mr-1"><RefreshRight /></el-icon>刷新
@@ -42,7 +42,7 @@
         <el-table-column prop="username" label="用户名" min-width="150">
           <template #default="{ row }">
             <div class="user-info">
-              <el-avatar :size="32" :src="row.avatarUrl" />
+              <el-avatar :size="32" :src="row.avatar_url" />
               <span class="ml-2">{{ row.username }}</span>
               <el-tag v-if="row.isPrimary" size="small" type="danger" effect="dark" class="ml-2">主账户</el-tag>
             </div>
@@ -52,9 +52,9 @@
         <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
         
-        <el-table-column prop="publicRepos" label="公开仓库" width="100" align="center">
+        <el-table-column prop="public_repos" label="公开仓库" width="100" align="center">
           <template #default="{ row }">
-            <el-tag type="info" effect="plain" round>{{ row.publicRepos }}</el-tag>
+            <el-tag type="info" effect="plain" round>{{ row.public_repos }}</el-tag>
           </template>
         </el-table-column>
         
@@ -63,24 +63,35 @@
         
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'" effect="light">
-              {{ row.status === 'active' ? '正常' : '禁用' }}
+            <el-tag :type="getStatusType(row.status)" effect="light">
+              {{ getStatusLabel(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
         
         <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
         
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              v-if="!row.isPrimary"
+             <el-button 
+              v-if="row.status === 'pending'"
               link 
-              type="primary" 
+              type="success" 
+              size="small" 
+              :loading="connectLoading"
+              @click="handleConnect(row)"
+            >
+              <el-icon class="mr-1"><Connection /></el-icon>连接
+            </el-button>
+            <el-button 
+              v-if="row.status === 'active'"
+              link 
+              :type="row.isPrimary ? 'warning' : 'primary'" 
               size="small" 
               @click="handleSetPrimary(row)"
             >
-              <el-icon class="mr-1"><Star /></el-icon>设为主账户
+              <el-icon class="mr-1"><Star /></el-icon>
+              {{ row.isPrimary ? '取消主账户' : '设为主账户' }}
             </el-button>
             <el-button link type="primary" size="small" @click="handleEdit(row)">
               <el-icon class="mr-1"><Edit /></el-icon>编辑
@@ -152,7 +163,7 @@
           />
         </el-form-item>
         
-        <el-form-item label="状态" prop="status">
+        <el-form-item label="状态" prop="status" v-if="isEdit">
            <el-switch
             v-model="form.status"
             active-value="active"
@@ -176,30 +187,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { 
   Search, Plus, RefreshRight, Edit, Delete, Connection, Star, User, Key
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { getGithubAccounts, addGithubAccount, updateGithubAccount, deleteGithubAccount, connectGithubAccount, setPrimaryAccount } from '@/api/github'
 
 // 类型定义
 interface GithubAccount {
   id: number
   username: string
-  nickname: string
   email: string
-  avatarUrl: string
-  publicRepos: number
-  followers: number
-  following: number
-  status: 'active' | 'disabled'
+  avatar_url: string
+  status: 'active' | 'disabled' | 'pending'
   remark: string
-  isPrimary: boolean
-  token?: string
+  // 前端辅助字段，后端暂未返回
+  nickname?: string
+  public_repos?: number
+  followers?: number
+  following?: number
+  is_primary?: boolean // 后端返回蛇形
+  isPrimary?: boolean // 兼容旧逻辑
 }
 
 // 状态变量
 const loading = ref(false)
+const connectLoading = ref(false)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -208,35 +222,7 @@ const isEdit = ref(false)
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 
-// 模拟数据
-const accountList = ref<GithubAccount[]>([
-  {
-    id: 1,
-    username: 'xiaozhi-admin',
-    nickname: '小植管理员',
-    email: 'admin@xiaozhi.ai',
-    avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
-    publicRepos: 12,
-    followers: 56,
-    following: 10,
-    status: 'active',
-    remark: '主要维护账号',
-    isPrimary: true
-  },
-  {
-    id: 2,
-    username: 'test-bot',
-    nickname: '测试机器人',
-    email: 'bot@example.com',
-    avatarUrl: 'https://avatars.githubusercontent.com/u/2?v=4',
-    publicRepos: 5,
-    followers: 2,
-    following: 0,
-    status: 'active',
-    remark: 'CI/CD专用',
-    isPrimary: false
-  }
-])
+const accountList = ref<GithubAccount[]>([])
 
 // 表单数据
 const form = reactive({
@@ -255,12 +241,14 @@ const rules = reactive<FormRules>({
 
 // 计算属性
 const filteredData = computed(() => {
-  let result = accountList.value
+  let result = accountList.value.map(item => ({
+    ...item,
+    isPrimary: item.is_primary || item.isPrimary // 兼容处理
+  }))
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(item => 
-      item.username.toLowerCase().includes(query) ||
-      item.nickname.toLowerCase().includes(query)
+      item.username.toLowerCase().includes(query)
     )
   }
   // 排序：主账户置顶
@@ -276,23 +264,41 @@ const paginatedData = computed(() => {
 })
 
 // 方法
+const loadData = async () => {
+  loading.value = true
+  try {
+    const res: any = await getGithubAccounts()
+    accountList.value = res.list || []
+  } catch (error) {
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
 const handleSearch = () => {
   currentPage.value = 1
 }
 
 const handleRefresh = () => {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-    ElMessage.success('刷新成功')
-  }, 1000)
+  loadData()
 }
 
 const handleQuickConnect = () => {
-  ElMessage.info('正在尝试连接 GitHub API...')
-  setTimeout(() => {
-    ElMessage.success('连接成功，API响应正常')
-  }, 1500)
+  ElMessage.info('功能开发中...')
+}
+
+const handleConnect = async (row: GithubAccount) => {
+  connectLoading.value = true
+  try {
+    await connectGithubAccount(row.id)
+    ElMessage.success('连接成功，数据已同步')
+    loadData()
+  } catch (error) {
+    console.error(error)
+  } finally {
+    connectLoading.value = false
+  }
 }
 
 const handleAdd = () => {
@@ -302,17 +308,34 @@ const handleAdd = () => {
     username: '',
     token: '',
     remark: '',
-    status: 'active'
+    status: 'pending' // 默认为待连接
   })
   dialogVisible.value = true
+}
+
+// 辅助函数
+const getStatusType = (status: string) => {
+  switch (status) {
+    case 'active': return 'success'
+    case 'pending': return 'warning'
+    default: return 'info'
+  }
+}
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'active': return '已连接'
+    case 'pending': return '待连接'
+    default: return '禁用'
+  }
 }
 
 const handleEdit = (row: GithubAccount) => {
   isEdit.value = true
   Object.assign(form, {
     id: row.id,
-    username: row.username,
-    token: '******', // 模拟不显示真实token
+    username: row.username, // username 不可编辑，但需要回显
+    token: '', // 编辑时不显示旧 Token，只允许覆盖
     remark: row.remark,
     status: row.status
   })
@@ -329,30 +352,37 @@ const handleDelete = (row: GithubAccount) => {
       type: 'warning',
       confirmButtonClass: 'el-button--danger'
     }
-  ).then(() => {
-    const index = accountList.value.findIndex(item => item.id === row.id)
-    if (index !== -1) {
-      accountList.value.splice(index, 1)
+  ).then(async () => {
+    try {
+      await deleteGithubAccount(row.id)
       ElMessage.success('删除成功')
+      loadData()
+    } catch (error) {
+      console.error(error)
     }
   }).catch(() => {})
 }
 
 const handleSetPrimary = (row: GithubAccount) => {
+  // 如果当前是主账户，则执行取消操作；否则执行设置操作
+  const action = row.isPrimary ? '取消' : '设置'
+  const newStatus = !row.isPrimary
+  
   ElMessageBox.confirm(
-    `确定要将 "${row.username}" 设置为主账户吗？`,
+    `确定要将 "${row.username}" ${action}为主账户吗？`,
     '提示',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'primary'
+      type: 'warning'
     }
-  ).then(() => {
-    accountList.value.forEach(item => item.isPrimary = false)
-    const target = accountList.value.find(item => item.id === row.id)
-    if (target) {
-      target.isPrimary = true
-      ElMessage.success('设置成功')
+  ).then(async () => {
+    try {
+      await setPrimaryAccount(row.id, newStatus)
+      ElMessage.success(`${action}主账户成功`)
+      loadData()
+    } catch (error) {
+      console.error(error)
     }
   }).catch(() => {})
 }
@@ -360,44 +390,38 @@ const handleSetPrimary = (row: GithubAccount) => {
 const handleSubmit = async () => {
   if (!formRef.value) return
   
-  await formRef.value.validate((valid) => {
+  await formRef.value.validate(async (valid) => {
     if (valid) {
       submitting.value = true
-      setTimeout(() => {
+      try {
         if (isEdit.value) {
-          const index = accountList.value.findIndex(item => item.id === form.id)
-          if (index !== -1 && accountList.value[index]) {
-            // 模拟更新
-            Object.assign(accountList.value[index]!, {
-              username: form.username,
-              remark: form.remark,
-              status: form.status
-            })
-            ElMessage.success('更新成功')
-          }
+          await updateGithubAccount(form.id, {
+            token: form.token, // 如果为空，后端不更新
+            remark: form.remark
+          })
+          ElMessage.success('更新成功')
         } else {
-          // 模拟新增，自动填充一些mock数据
-          accountList.value.push({
-            id: Date.now(),
+          await addGithubAccount({
             username: form.username,
-            nickname: 'New User',
-            email: 'user@example.com',
-            avatarUrl: 'https://avatars.githubusercontent.com/u/0?v=4',
-            publicRepos: 0,
-            followers: 0,
-            following: 0,
-            status: form.status as any,
-            remark: form.remark,
-            isPrimary: false
+            token: form.token,
+            remark: form.remark
           })
           ElMessage.success('添加成功')
         }
         dialogVisible.value = false
+        loadData()
+      } catch (error) {
+        console.error(error)
+      } finally {
         submitting.value = false
-      }, 800)
+      }
     }
   })
 }
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style lang="scss" scoped>
