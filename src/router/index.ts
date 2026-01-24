@@ -37,7 +37,8 @@ const router = createRouter({
         {
           path: 'dns',
           name: 'dns',
-          component: () => import('@/views/DNSManagement.vue')
+          component: () => import('@/views/DNSManagement.vue'),
+          meta: { title: '域名管理', requiresAuth: true }
         },
         {
           path: 'dns/:domain/records',

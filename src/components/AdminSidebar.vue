@@ -90,7 +90,7 @@
               <div class="nav-icon">
                 <el-icon><Monitor /></el-icon>
               </div>
-              <span v-if="!isCollapsed" class="nav-label">DNS管理</span>
+              <span v-if="!isCollapsed" class="nav-label">域名管理</span>
               <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/dns' }"></div>
             </router-link>
           </li>
@@ -110,25 +110,84 @@
           </li>
 
           <li class="nav-item" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+            <el-popover
+              v-if="isCollapsed"
+              placement="right"
+              :width="200"
+              trigger="hover"
+              popper-class="sidebar-submenu-popover"
+              :show-arrow="false"
+              :offset="0"
+            >
+              <template #reference>
+                <div 
+                  class="nav-link cursor-pointer"
+                  :class="{ active: $route.path.startsWith('/github') }"
+                >
+                  <div class="nav-icon">
+                    <el-icon><Link /></el-icon>
+                  </div>
+                  <span v-if="!isCollapsed" class="nav-label flex-1">GitHub管理</span>
+                  <el-icon 
+                    v-if="!isCollapsed" 
+                    class="arrow-icon"
+                    :class="{ 'is-expanded': isGithubExpanded }"
+                  >
+                    <ArrowRight />
+                  </el-icon>
+                  <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path.startsWith('/github') }"></div>
+                </div>
+              </template>
+              
+              <!-- Popover Content (Collapsed Mode) -->
+              <div class="popover-menu">
+                <div class="popover-title">GitHub管理</div>
+                <ul class="popover-list">
+                  <li>
+                    <router-link
+                      to="/github/monitor"
+                      class="popover-link"
+                      :class="{ active: $route.path === '/github/monitor' }"
+                    >
+                      <span class="sub-dot"></span>
+                      仓库监控
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link
+                      to="/github/account"
+                      class="popover-link"
+                      :class="{ active: $route.path === '/github/account' }"
+                    >
+                      <span class="sub-dot"></span>
+                      账户配置
+                    </router-link>
+                  </li>
+                </ul>
+              </div>
+            </el-popover>
+
+            <!-- Normal Mode (Not Collapsed) -->
             <div 
+              v-else
               class="nav-link cursor-pointer"
               :class="{ active: $route.path.startsWith('/github') }"
+              @click="toggleGithubExpand"
             >
               <div class="nav-icon">
                 <el-icon><Link /></el-icon>
               </div>
-              <span v-if="!isCollapsed" class="nav-label flex-1">GitHub管理</span>
+              <span class="nav-label flex-1">GitHub管理</span>
               <el-icon 
-                v-if="!isCollapsed" 
                 class="arrow-icon"
                 :class="{ 'is-expanded': isGithubExpanded }"
               >
                 <ArrowRight />
               </el-icon>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path.startsWith('/github') }"></div>
+              <div class="nav-indicator" :class="{ active: $route.path.startsWith('/github') }"></div>
             </div>
             
-            <!-- 子菜单 -->
+            <!-- 子菜单 (展开模式) -->
             <ul v-show="!isCollapsed && isGithubExpanded" class="sub-menu transition-all duration-300">
               <li class="sub-item">
                 <router-link
@@ -237,18 +296,98 @@ const closeMobileMenu = () => {
   themeStore.closeMobileMenu()
 }
 
+const toggleGithubExpand = () => {
+  isGithubExpanded.value = !isGithubExpanded.value
+}
+
 const handleMouseEnter = () => {
   if (!isCollapsed.value) {
-    isGithubExpanded.value = true
+    // 移除自动展开，改为点击展开
+    // isGithubExpanded.value = true
   }
 }
 
 const handleMouseLeave = () => {
   if (!isCollapsed.value && !route.path.startsWith('/github')) {
-    isGithubExpanded.value = false
+    // 移除自动收起，保持状态
+    // isGithubExpanded.value = false
   }
 }
 </script>
+
+<style lang="scss">
+// Popover 样式 (全局)
+.sidebar-submenu-popover {
+  padding: 0 !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-lg) !important;
+  background-color: var(--bg-primary) !important;
+  
+  .popover-menu {
+    padding: 8px 0;
+    
+    .popover-title {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 4px;
+    }
+    
+    .popover-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      
+      li {
+        padding: 0 4px;
+        
+        .popover-link {
+          display: flex;
+          align-items: center;
+          padding: 8px 12px;
+          text-decoration: none;
+          color: var(--text-primary);
+          font-size: 14px;
+          border-radius: var(--radius-sm);
+          transition: all 0.2s;
+          
+          .sub-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: currentColor;
+            margin-right: 8px;
+            opacity: 0.6;
+          }
+          
+          &:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--color-primary);
+            
+            .sub-dot {
+              opacity: 1;
+            }
+          }
+          
+          &.active {
+            background-color: var(--bg-tertiary);
+            color: var(--color-primary);
+            font-weight: 500;
+            
+            .sub-dot {
+              opacity: 1;
+              background-color: var(--color-primary);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+</style>
 
 <style lang="scss" scoped>
 
@@ -565,6 +704,32 @@ const handleMouseLeave = () => {
     background-color: var(--bg-tertiary);
     border-radius: 6px;
     font-weight: 500;
+  }
+}
+
+// 折叠状态样式修正
+.admin-sidebar.collapsed {
+  .sidebar-header {
+    padding-left: 0;
+    padding-right: 0;
+    
+    .logo-section {
+      justify-content: center;
+      
+      .logo-wrapper {
+        gap: 0;
+      }
+    }
+  }
+
+  .sidebar-nav .nav-menu .nav-item .nav-link {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+
+    .nav-icon {
+      margin-right: 0;
+    }
   }
 }
 

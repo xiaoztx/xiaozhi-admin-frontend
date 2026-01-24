@@ -97,7 +97,19 @@
 
         <el-table-column prop="package" label="套餐" width="120">
           <template #default="{ row }">
-            <span class="package-text">{{ row.package }}</span>
+            <el-tag type="warning" size="small" effect="plain">{{ row.package || '免费版' }}</el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="remark" label="备注" min-width="150">
+          <template #default="{ row }">
+            <el-input
+              v-model="row.remark"
+              placeholder="请输入备注"
+              size="small"
+              @blur="handleUpdateRemark(row)"
+              @keyup.enter="$event.target.blur()"
+            />
           </template>
         </el-table-column>
 
@@ -159,7 +171,12 @@
         status-icon
       >
         <el-form-item label="云凭证" prop="credentialId">
-          <el-select v-model="form.credentialId" placeholder="请选择云服务商凭证" style="width: 100%">
+          <el-select 
+            v-model="form.credentialId" 
+            placeholder="请选择云服务商凭证" 
+            style="width: 100%"
+            @change="handleCredentialChange"
+          >
             <el-option
               v-for="item in credentialOptions"
               :key="item.id"
@@ -170,15 +187,32 @@
         </el-form-item>
 
         <el-form-item label="域名" prop="domain">
-          <el-input 
-            v-model="form.domain" 
-            placeholder="请输入主域名（例如：example.com）"
+          <el-select
+            v-model="form.domain"
+            placeholder="请选择域名"
+            style="width: 100%"
+            filterable
+            :loading="loadingDomains"
+            loading-text="加载域名中..."
+            no-data-text="该凭证下暂无域名或获取失败"
           >
             <template #prefix>
               <el-icon><Monitor /></el-icon>
             </template>
-          </el-input>
-          <div class="form-tip">请输入一级域名，请勿输入 www 等二级域名</div>
+            <el-option
+              v-for="item in cloudDomainOptions"
+              :key="item.domain"
+              :label="item.domain"
+              :value="item.domain"
+            >
+              <span style="float: left">{{ item.domain }}</span>
+              <span style="float: right; color: var(--text-secondary); font-size: 12px">
+                {{ item.status === 'ENABLE' ? '正常' : '暂停' }}
+              </span>
+            </el-option>
+          </el-select>
+          <div class="form-tip" v-if="!form.credentialId">请先选择云凭证</div>
+          <div class="form-tip" v-else>只能添加该云账号下的已解析域名</div>
         </el-form-item>
         
         <el-form-item label="备注" prop="remark">
@@ -211,7 +245,7 @@ import {
   Monitor, Check, List
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getDomains, addDomain, deleteDomain, getValidCloudConfigs } from '@/api/dns'
+import { getDomains, addDomain, deleteDomain, getValidCloudConfigs, getCloudDomains, updateDomain } from '@/api/dns'
 
 const router = useRouter()
 
@@ -234,6 +268,13 @@ interface CredentialOption {
   provider: string
 }
 
+interface CloudDomain {
+  domain: string
+  status: string
+  recordCount: number
+  remark: string
+}
+
 // 状态变量
 const loading = ref(false)
 const searchQuery = ref('')
@@ -248,6 +289,8 @@ const formRef = ref<FormInstance>()
 // 列表数据
 const domainList = ref<DnsDomain[]>([])
 const credentialOptions = ref<CredentialOption[]>([])
+const cloudDomainOptions = ref<CloudDomain[]>([]) // 云端域名列表
+const loadingDomains = ref(false) // 加载云端域名状态
 
 // 表单数据
 const form = reactive({
@@ -255,6 +298,24 @@ const form = reactive({
   domain: '',
   remark: ''
 })
+
+// 监听凭证变化，自动获取域名列表
+const handleCredentialChange = async (val: number) => {
+  form.domain = '' // 清空已选域名
+  cloudDomainOptions.value = []
+  if (!val) return
+  
+  loadingDomains.value = true
+  try {
+    const res: any = await getCloudDomains(val)
+    cloudDomainOptions.value = res.list || []
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('获取云端域名列表失败')
+  } finally {
+    loadingDomains.value = false
+  }
+}
 
 // 自定义域名验证
 const validateDomain = (_rule: any, value: string, callback: any) => {
@@ -314,7 +375,8 @@ const loadDomains = async () => {
       providerName: item.cloud_config?.provider || 'Unknown',
       status: item.status || 'Unknown',
       recordCount: item.record_count,
-      package: item.remark || '-',
+      package: item.package,
+      remark: item.remark,
       lastOperationTime: new Date(item.created_at).toLocaleString()
     }))
     total.value = res.total
@@ -332,6 +394,16 @@ const loadCredentials = async () => {
     credentialOptions.value = res.list
   } catch (error) {
     console.error(error)
+  }
+}
+
+const handleUpdateRemark = async (row: DnsDomain) => {
+  try {
+    await updateDomain(row.id, { remark: row.remark })
+    ElMessage.success('备注更新成功')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('备注更新失败')
   }
 }
 
@@ -402,7 +474,16 @@ const handleAdd = async () => {
     return
   }
 
-  form.credentialId = credentialOptions.value.length === 1 ? credentialOptions.value[0]?.id : undefined
+  // 默认选中第一个
+  if (credentialOptions.value.length === 1) {
+    const defaultId = credentialOptions.value[0]?.id
+    form.credentialId = defaultId
+    if (defaultId !== undefined) {
+      handleCredentialChange(defaultId) // 触发域名加载
+    }
+  } else {
+    form.credentialId = undefined
+  }
   form.domain = ''
   form.remark = ''
   dialogVisible.value = true
@@ -457,6 +538,14 @@ const handleSubmit = async () => {
         loadDomains()
       } catch (error: any) {
         // 如果是特定错误，弹出详细提示
+        if (error.response && error.response.status === 409) {
+           ElMessageBox.alert(error.response.data.error || '该域名已存在，请勿重复添加', '重复添加', {
+             type: 'warning',
+             confirmButtonText: '知道了'
+           })
+           return
+        }
+        
         if (error.response && error.response.data && error.response.data.error) {
            const errMsg = error.response.data.error
            if (errMsg.includes("当前域名未添加解析")) {

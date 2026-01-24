@@ -79,9 +79,10 @@
               type="primary" 
               class="submit-btn" 
               :loading="loading" 
+              disabled
               @click="handleRegister"
             >
-              立即注册
+              注册已暂停
             </el-button>
 
             <div class="auth-footer">

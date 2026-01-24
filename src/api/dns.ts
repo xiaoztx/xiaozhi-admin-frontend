@@ -16,6 +16,14 @@ export const addDomain = (data: any) => {
   })
 }
 
+export const updateDomain = (id: number, data: any) => {
+  return request({
+    url: `/domains/${id}`,
+    method: 'put',
+    data
+  })
+}
+
 export const deleteDomain = (id: number) => {
   return request({
     url: `/domains/${id}`,
@@ -25,7 +33,15 @@ export const deleteDomain = (id: number) => {
 
 export const getValidCloudConfigs = () => {
   return request({
-    url: '/domains/cloud-configs',
+    url: '/domain-configs',
     method: 'get'
+  })
+}
+
+export const getCloudDomains = (cloudConfigId: number) => {
+  return request({
+    url: '/domains/cloud-domains',
+    method: 'get',
+    params: { cloud_config_id: cloudConfigId }
   })
 }

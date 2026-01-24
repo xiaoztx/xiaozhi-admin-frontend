@@ -131,7 +131,7 @@ const breadcrumbItems = computed(() => {
     '/': '首页',
     '/users': '用户管理',
     '/cloud-config': '云配置管理',
-    '/dns': 'DNS管理',
+    '/dns': '域名管理',
     '/oss': '对象存储管理',
     '/github/monitor': '仓库监控',
     '/github/account': '账户配置',
@@ -151,7 +151,7 @@ const breadcrumbItems = computed(() => {
     
     // 特殊路由处理
     if (route.name === 'dns-records') {
-      breadcrumbs.push({ label: 'DNS管理', path: '/dns' })
+      breadcrumbs.push({ label: '域名管理', path: '/dns' })
       breadcrumbs.push({ label: '解析记录', path })
       return breadcrumbs
     }
