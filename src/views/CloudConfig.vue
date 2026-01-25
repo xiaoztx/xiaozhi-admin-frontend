@@ -2,33 +2,33 @@
   <div class="cloud-config-manage">
     <!-- 顶部统计卡片 -->
     <div class="stats-cards">
-      <el-card class="stat-card" shadow="hover">
-        <div class="stat-icon bg-blue">
+      <div class="stat-card card-blue">
+        <div class="stat-content">
+          <div class="stat-label">总配置数</div>
+          <div class="stat-value">{{ configList.length }}</div>
+        </div>
+        <div class="stat-icon-bg">
           <el-icon><Cloudy /></el-icon>
         </div>
+      </div>
+      <div class="stat-card card-green">
         <div class="stat-content">
-          <div class="stat-value">{{ configList.length }}</div>
-          <div class="stat-label">总配置数</div>
+          <div class="stat-label">连接正常</div>
+          <div class="stat-value">{{ configList.filter(item => item.status === 'active' || item.status === 'connected').length }}</div>
         </div>
-      </el-card>
-      <el-card class="stat-card" shadow="hover">
-        <div class="stat-icon bg-green">
+        <div class="stat-icon-bg">
           <el-icon><Link /></el-icon>
         </div>
+      </div>
+      <div class="stat-card card-orange">
         <div class="stat-content">
-          <div class="stat-value">{{ configList.filter(item => item.status === 'active' || item.status === 'connected').length }}</div>
-          <div class="stat-label">连接正常</div>
+          <div class="stat-label">连接异常</div>
+          <div class="stat-value">{{ configList.filter(item => item.status === 'error' || item.status === 'inactive').length }}</div>
         </div>
-      </el-card>
-      <el-card class="stat-card" shadow="hover">
-        <div class="stat-icon bg-orange">
+        <div class="stat-icon-bg">
           <el-icon><Warning /></el-icon>
         </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ configList.filter(item => item.status === 'error' || item.status === 'inactive').length }}</div>
-          <div class="stat-label">连接异常</div>
-        </div>
-      </el-card>
+      </div>
     </div>
 
     <!-- 主要内容区 -->

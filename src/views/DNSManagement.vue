@@ -2,33 +2,33 @@
   <div class="dns-management">
     <!-- 顶部统计卡片 -->
     <div class="stats-cards">
-      <el-card class="stat-card" shadow="hover">
-        <div class="stat-icon bg-blue">
+      <div class="stat-card card-blue">
+        <div class="stat-content">
+          <div class="stat-label">域名总数</div>
+          <div class="stat-value">{{ domainList.length }}</div>
+        </div>
+        <div class="stat-icon-bg">
           <el-icon><Monitor /></el-icon>
         </div>
+      </div>
+      <div class="stat-card card-green">
         <div class="stat-content">
-          <div class="stat-value">{{ domainList.length }}</div>
-          <div class="stat-label">域名总数</div>
+          <div class="stat-label">解析正常</div>
+          <div class="stat-value">{{ activeCount }}</div>
         </div>
-      </el-card>
-      <el-card class="stat-card" shadow="hover">
-        <div class="stat-icon bg-green">
+        <div class="stat-icon-bg">
           <el-icon><Check /></el-icon>
         </div>
+      </div>
+      <div class="stat-card card-purple">
         <div class="stat-content">
-          <div class="stat-value">{{ activeCount }}</div>
-          <div class="stat-label">解析正常</div>
+          <div class="stat-label">总记录数</div>
+          <div class="stat-value">{{ totalRecords }}</div>
         </div>
-      </el-card>
-      <el-card class="stat-card" shadow="hover">
-        <div class="stat-icon bg-purple">
+        <div class="stat-icon-bg">
           <el-icon><List /></el-icon>
         </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ totalRecords }}</div>
-          <div class="stat-label">总记录数</div>
-        </div>
-      </el-card>
+      </div>
     </div>
 
     <!-- 主要内容区 -->
@@ -575,10 +575,6 @@ onMounted(() => {
   padding: 24px;
   max-width: 1600px;
   margin: 0 auto;
-
-  .stats-cards {
-    // 这里的样式已经提取到全局 main.scss
-  }
 
   .main-card {
     border: none;

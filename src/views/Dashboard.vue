@@ -14,63 +14,53 @@
 
     <!-- 统计卡片 -->
     <div class="stats-cards">
-      <el-row :gutter="20">
-        <!-- 卡片1 -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <div class="stat-card card-blue">
-            <div class="stat-content">
-              <div class="stat-label">{{ card1.label }}</div>
-              <div class="stat-value">{{ card1.value }}</div>
-            </div>
-            <div class="stat-icon-bg">
-              <el-icon v-if="isAdmin"><User /></el-icon>
-              <el-icon v-else><Monitor /></el-icon>
-            </div>
-          </div>
-        </el-col>
+      <!-- 卡片1 -->
+      <div class="stat-card card-blue">
+        <div class="stat-content">
+          <div class="stat-label">{{ card1.label }}</div>
+          <div class="stat-value">{{ card1.value }}</div>
+        </div>
+        <div class="stat-icon-bg">
+          <el-icon v-if="isAdmin"><User /></el-icon>
+          <el-icon v-else><Monitor /></el-icon>
+        </div>
+      </div>
 
-        <!-- 卡片2 -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <div class="stat-card card-purple">
-            <div class="stat-content">
-              <div class="stat-label">{{ card2.label }}</div>
-              <div class="stat-value">{{ card2.value }}</div>
-            </div>
-            <div class="stat-icon-bg">
-              <el-icon v-if="isAdmin"><Monitor /></el-icon>
-              <el-icon v-else><Link /></el-icon>
-            </div>
-          </div>
-        </el-col>
+      <!-- 卡片2 -->
+      <div class="stat-card card-purple">
+        <div class="stat-content">
+          <div class="stat-label">{{ card2.label }}</div>
+          <div class="stat-value">{{ card2.value }}</div>
+        </div>
+        <div class="stat-icon-bg">
+          <el-icon v-if="isAdmin"><Monitor /></el-icon>
+          <el-icon v-else><Link /></el-icon>
+        </div>
+      </div>
 
-        <!-- 卡片3 -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <div class="stat-card card-green">
-            <div class="stat-content">
-              <div class="stat-label">{{ card3.label }}</div>
-              <div class="stat-value">{{ card3.value }}</div>
-            </div>
-            <div class="stat-icon-bg">
-              <el-icon v-if="isAdmin"><Link /></el-icon>
-              <el-icon v-else><Bell /></el-icon>
-            </div>
-          </div>
-        </el-col>
+      <!-- 卡片3 -->
+      <div class="stat-card card-green">
+        <div class="stat-content">
+          <div class="stat-label">{{ card3.label }}</div>
+          <div class="stat-value">{{ card3.value }}</div>
+        </div>
+        <div class="stat-icon-bg">
+          <el-icon v-if="isAdmin"><Link /></el-icon>
+          <el-icon v-else><Bell /></el-icon>
+        </div>
+      </div>
 
-        <!-- 卡片4 -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <div class="stat-card card-orange">
-            <div class="stat-content">
-              <div class="stat-label">{{ card4.label }}</div>
-              <div class="stat-value">{{ card4.value }}</div>
-            </div>
-            <div class="stat-icon-bg">
-              <el-icon v-if="isAdmin"><Bell /></el-icon>
-              <el-icon v-else><FolderOpened /></el-icon>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
+      <!-- 卡片4 -->
+      <div class="stat-card card-orange">
+        <div class="stat-content">
+          <div class="stat-label">{{ card4.label }}</div>
+          <div class="stat-value">{{ card4.value }}</div>
+        </div>
+        <div class="stat-icon-bg">
+          <el-icon v-if="isAdmin"><Bell /></el-icon>
+          <el-icon v-else><FolderOpened /></el-icon>
+        </div>
+      </div>
     </div>
 
     <!-- 图表区域 -->
@@ -198,9 +188,6 @@ import {
   Monitor,
   FolderOpened,
   Bell,
-  ArrowUp,
-  ArrowDown,
-  Minus,
   TrendCharts,
   Setting,
   Link
@@ -366,113 +353,6 @@ onUnmounted(() => {
 
   .stats-cards {
     margin-bottom: 24px;
-
-    .stat-card {
-      border-radius: 16px;
-      padding: 24px;
-      height: 120px;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      }
-
-      .stat-content {
-        z-index: 2;
-        position: relative;
-        
-        .stat-label {
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          opacity: 0.9;
-        }
-
-        .stat-value {
-          font-size: 36px;
-          font-weight: 700;
-          line-height: 1;
-          font-family: 'Monaco', 'Menlo', sans-serif;
-        }
-      }
-
-      .stat-icon-bg {
-        position: absolute;
-        right: -10px;
-        bottom: -15px;
-        opacity: 0.15;
-        transform: rotate(-15deg);
-        z-index: 1;
-        transition: all 0.3s ease;
-
-        .el-icon {
-          font-size: 90px;
-        }
-      }
-      
-      &:hover .stat-icon-bg {
-        transform: rotate(0deg) scale(1.1);
-        opacity: 0.25;
-      }
-
-      // 颜色主题 (亮色模式)
-      &.card-blue {
-        background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
-        color: #0050b3;
-        .stat-icon-bg { color: #1890ff; }
-      }
-
-      &.card-purple {
-        background: linear-gradient(135deg, #f9f0ff 0%, #efdbff 100%);
-        color: #531dab;
-        .stat-icon-bg { color: #722ed1; }
-      }
-
-      &.card-green {
-        background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
-        color: #389e0d;
-        .stat-icon-bg { color: #52c41a; }
-      }
-
-      &.card-orange {
-        background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
-        color: #d46b08;
-        .stat-icon-bg { color: #fa8c16; }
-      }
-    }
-  }
-
-  // 暗黑模式适配
-  :global(.dark) {
-    .stats-cards .stat-card {
-      &.card-blue {
-        background: linear-gradient(135deg, #111d2c 0%, #162c46 100%);
-        color: #a9d1ff;
-        .stat-icon-bg { color: #177ddc; }
-      }
-      &.card-purple {
-        background: linear-gradient(135deg, #1a1625 0%, #2a1f3d 100%);
-        color: #d3adf7;
-        .stat-icon-bg { color: #722ed1; }
-      }
-      &.card-green {
-        background: linear-gradient(135deg, #162312 0%, #1f3616 100%);
-        color: #b7eb8f;
-        .stat-icon-bg { color: #49aa19; }
-      }
-      &.card-orange {
-        background: linear-gradient(135deg, #2b1d11 0%, #442d18 100%);
-        color: #ffd591;
-        .stat-icon-bg { color: #d89614; }
-      }
-    }
   }
 
   .charts-section {
