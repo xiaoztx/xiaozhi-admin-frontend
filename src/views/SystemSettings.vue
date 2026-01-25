@@ -100,6 +100,34 @@
                     <div class="item-desc mt-2">强制将所有HTTP请求重定向到HTTPS</div>
                   </div>
                 </el-form-item>
+                
+                <el-form-item label="注册邀请码">
+                  <div class="flex-column" style="width: 100%">
+                    <div class="flex-row items-center mb-2">
+                      <el-switch v-model="securityForm.enableInviteCode" active-text="启用" class="mr-4" />
+                      <template v-if="securityForm.enableInviteCode">
+                        <el-tooltip content="点击复制" placement="top">
+                          <el-input 
+                            v-model="securityForm.inviteCode" 
+                            readonly 
+                            placeholder="点击生成邀请码" 
+                            style="width: 200px; margin-right: 12px; cursor: pointer"
+                            class="invite-code-input"
+                            @click="handleCopyInviteCode"
+                          >
+                            <template #prefix>
+                              <el-icon><Key /></el-icon>
+                            </template>
+                          </el-input>
+                        </el-tooltip>
+                        <el-button type="primary" plain size="small" @click="generateInviteCode">
+                          生成
+                        </el-button>
+                      </template>
+                    </div>
+                    <div class="item-desc">启用后，用户注册时必须填写此邀请码</div>
+                  </div>
+                </el-form-item>
 
                 <el-form-item label="登录失败锁定">
                   <el-input-number v-model="securityForm.loginLockCount" :min="0" :max="10" />
@@ -246,7 +274,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const activeTab = ref('basic')
@@ -266,6 +294,8 @@ const basicForm = reactive({
 const securityForm = reactive({
   allowRegister: true,
   forceHttps: true,
+  enableInviteCode: false,
+  inviteCode: '',
   loginLockCount: 5,
   minPasswordLength: 8,
   passwordComplexity: ['uppercase', 'lowercase', 'numbers']
@@ -308,6 +338,22 @@ const handleLogoChange = (file: any) => {
     basicForm.logoUrl = e.target?.result as string
   }
   reader.readAsDataURL(file.raw)
+}
+
+const generateInviteCode = () => {
+  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  securityForm.inviteCode = code
+  ElMessage.success('邀请码已生成')
+}
+
+const handleCopyInviteCode = async () => {
+  if (!securityForm.inviteCode) return
+  try {
+    await navigator.clipboard.writeText(securityForm.inviteCode)
+    ElMessage.success('邀请码已复制到剪贴板')
+  } catch (err) {
+    ElMessage.error('复制失败，请手动复制')
+  }
 }
 
 const handleTestEmail = () => {
@@ -441,6 +487,16 @@ const handleTestWebhook = () => {
       display: flex;
       flex-direction: column;
     }
+    
+    .flex-row {
+      display: flex;
+    }
+    
+    .items-center {
+      align-items: center;
+    }
+    
+    .mr-4 { margin-right: 16px; }
 
     .mt-2 {
       margin-top: 8px;
@@ -455,6 +511,17 @@ const handleTestWebhook = () => {
         font-family: Consolas, Monaco, 'Courier New', monospace;
         font-size: 13px;
         background-color: var(--bg-secondary);
+      }
+    }
+    
+    .invite-code-input {
+      :deep(.el-input__inner) {
+        cursor: pointer;
+        color: var(--color-primary);
+        font-weight: 600;
+        font-family: monospace;
+        letter-spacing: 2px;
+        text-align: center;
       }
     }
   }

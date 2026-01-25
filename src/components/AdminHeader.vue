@@ -20,6 +20,18 @@
 
     <!-- 右侧操作区 -->
     <div class="header-actions">
+      <!-- 全屏切换 -->
+      <el-button
+        link
+        @click="toggleFullScreen"
+        class="fullscreen-btn"
+      >
+        <el-icon>
+          <FullScreen v-if="!isFullScreen" />
+          <Aim v-else />
+        </el-icon>
+      </el-button>
+
       <!-- 主题切换 -->
       <el-button
         link
@@ -32,30 +44,15 @@
         </el-icon>
       </el-button>
 
-      <!-- 消息通知 -->
-      <el-dropdown trigger="click" class="notification-dropdown">
-        <el-badge :value="3" :max="99" class="notification-badge" :offset="[-2, 6]">
-          <el-button link class="notification-btn">
-            <el-icon><Bell /></el-icon>
-          </el-button>
-        </el-badge>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item>系统更新通知</el-dropdown-item>
-            <el-dropdown-item>用户登录提醒</el-dropdown-item>
-            <el-dropdown-item>服务器告警</el-dropdown-item>
-            <el-dropdown-item divided>查看全部通知</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
-
       <!-- 用户菜单 -->
       <el-dropdown trigger="click" class="user-dropdown">
         <div class="user-info">
-          <el-avatar
-            size="small"
-            :src="userAvatar"
-          />
+          <el-badge is-dot class="user-badge" :offset="[0, 5]">
+            <el-avatar
+              size="small"
+              :src="userAvatar"
+            />
+          </el-badge>
           <span class="username">{{ username }}</span>
           <el-icon class="arrow-icon"><ArrowDown /></el-icon>
         </div>
@@ -64,6 +61,11 @@
             <el-dropdown-item @click="$router.push('/profile')">
               <el-icon><User /></el-icon>
               个人中心
+            </el-dropdown-item>
+            <el-dropdown-item @click="$router.push('/notifications')">
+              <el-icon><Bell /></el-icon>
+              消息通知
+              <el-badge value="3" class="menu-badge" type="danger" />
             </el-dropdown-item>
             <el-dropdown-item @click="$router.push('/settings')">
               <el-icon><Setting /></el-icon>
@@ -81,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -95,6 +97,8 @@ import {
   User,
   Setting,
   SwitchButton,
+  FullScreen,
+  Aim,
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -107,6 +111,7 @@ const userAvatar = computed(() => userStore.userInfo.avatar || 'https://cube.ele
 const isDark = computed(() => themeStore.isDark)
 const isSidebarCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobile = computed(() => window.innerWidth <= 768)
+const isFullScreen = ref(false)
 
 const toggleTheme = () => {
   themeStore.toggleTheme()
@@ -119,6 +124,30 @@ const toggleSidebar = () => {
 const toggleMobileMenu = () => {
   themeStore.toggleMobileMenu()
 }
+
+const toggleFullScreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen()
+    isFullScreen.value = true
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+      isFullScreen.value = false
+    }
+  }
+}
+
+const handleFullScreenChange = () => {
+  isFullScreen.value = !!document.fullscreenElement
+}
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', handleFullScreenChange)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', handleFullScreenChange)
+})
 
 const handleLogout = async () => {
   try {
@@ -149,14 +178,41 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none; // 移除默认阴影
   z-index: 100;
 
-  // 企业级深色主题
-  .dark & {
-    background: var(--bg-primary);
-    border-bottom-color: var(--border-light);
-    box-shadow: var(--shadow-sm);
+  // 企业级深色主题 - 暗紫渐变风格
+  :global(.dark) & {
+    background: linear-gradient(90deg, #241d38 0%, #151024 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: none; // 移除阴影
+
+    // 按钮和图标适配
+    .header-actions {
+      .theme-btn, .fullscreen-btn, .notification-btn, .user-dropdown .user-info {
+        color: rgba(255, 255, 255, 0.7);
+        border-color: rgba(255, 255, 255, 0.1);
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+          color: #fff;
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+      }
+      
+      .user-dropdown .user-info .username {
+        color: #fff;
+      }
+    }
+    
+    .sidebar-toggle-btn {
+      color: rgba(255, 255, 255, 0.7);
+      
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+    }
   }
 
   .mobile-menu-btn {
@@ -304,7 +360,8 @@ const handleLogout = async () => {
     align-items: center;
     gap: var(--space-1);
 
-    .theme-btn {
+    .theme-btn,
+    .fullscreen-btn {
       width: 40px;
       height: 40px;
       background: none;
@@ -324,39 +381,6 @@ const handleLogout = async () => {
 
       .el-icon {
         font-size: 18px;
-      }
-    }
-
-    .notification-dropdown {
-      .notification-badge {
-        :deep(.el-badge__content) {
-          background: var(--color-danger);
-          border: 2px solid var(--bg-primary);
-          box-shadow: var(--shadow-sm);
-        }
-      }
-
-      .notification-btn {
-        width: 40px;
-        height: 40px;
-        background: none;
-        border: none;
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all var(--transition-fast);
-        color: var(--text-secondary);
-
-        &:hover {
-          background-color: var(--bg-tertiary);
-          color: var(--text-primary);
-        }
-
-        .el-icon {
-          font-size: 18px;
-        }
       }
     }
 
@@ -397,6 +421,14 @@ const handleLogout = async () => {
         }
       }
     }
+  }
+}
+
+.menu-badge {
+  margin-left: auto;
+  :deep(.el-badge__content) {
+    border: none;
+    transform: scale(0.8);
   }
 }
 
@@ -445,7 +477,7 @@ const handleLogout = async () => {
       gap: 6px;
 
       .theme-btn,
-      .notification-btn {
+      .fullscreen-btn {
         width: 36px;
         height: 36px;
       }
@@ -504,7 +536,7 @@ const handleLogout = async () => {
       gap: 12px;
 
       .theme-btn,
-      .notification-btn {
+      .fullscreen-btn {
         width: 38px;
         height: 38px;
       }

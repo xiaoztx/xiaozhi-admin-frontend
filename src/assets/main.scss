@@ -336,6 +336,19 @@ html, body {
       border-color: var(--border-primary);
     }
   }
+  
+  // 修复深色模式下 textarea 背景色
+  .el-textarea {
+    .el-textarea__inner {
+      background-color: var(--bg-tertiary);
+      box-shadow: 0 0 0 1px var(--border-primary) inset;
+      color: var(--text-primary);
+      
+      &:focus {
+        box-shadow: 0 0 0 1px var(--color-primary) inset;
+      }
+    }
+  }
 
   .el-select {
     .el-select__wrapper {
@@ -357,19 +370,53 @@ html, body {
     }
   }
 
-  .el-dialog {
+  // 移出 .dark 作用域，作为全局默认样式（浅色模式）
+  // 覆盖 Element Plus 默认 Dialog 样式
+  :root .el-dialog {
+    --el-dialog-bg-color: var(--bg-surface);
+    --el-dialog-box-shadow: var(--shadow-xl);
+    --el-dialog-border-radius: var(--radius-lg); // Element Plus 变量覆盖
+    border-radius: var(--radius-lg) !important; // 强制覆盖
+    overflow: hidden;
+    box-shadow: var(--shadow-xl) !important; // 强制覆盖
+
+    .el-dialog__header {
+      margin-right: 0;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-light);
+      
+      .el-dialog__title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+    }
+
+    .el-dialog__body {
+      padding: 24px;
+      color: var(--text-primary);
+    }
+
+    .el-dialog__footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-light);
+      background-color: var(--bg-secondary);
+    }
+  }
+
+  // 针对深色模式的 Dialog 覆盖
+  .dark .el-dialog {
+    --el-dialog-bg-color: var(--bg-secondary);
     background-color: var(--bg-secondary);
-    border-color: var(--border-primary);
+    border: 1px solid var(--border-primary);
 
     .el-dialog__header {
       background-color: var(--bg-secondary);
       border-bottom-color: var(--border-primary);
-      color: var(--text-primary);
     }
 
     .el-dialog__body {
       background-color: var(--bg-secondary);
-      color: var(--text-primary);
     }
 
     .el-dialog__footer {
@@ -377,101 +424,129 @@ html, body {
       border-top-color: var(--border-primary);
     }
   }
+}
 
-  // 针对暗色模式的表格特定覆盖
-  .el-table {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
+// =============================================================================
+// 全局 Dialog 样式优化
+// =============================================================================
+// 使用 body 选择器确保权重足够覆盖 Element Plus 默认样式，但保持代码整洁
+body .el-dialog {
+  --el-dialog-border-radius: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px 4px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+
+  .el-dialog__header {
+    margin-right: 0;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-light);
+    background-color: var(--bg-surface);
     
-    .el-table__header {
-      th {
-        background-color: var(--bg-tertiary);
-        border-bottom-color: var(--border-primary);
-        color: var(--text-primary);
-      }
-    }
-
-    .el-table__row {
-      border-bottom-color: var(--border-primary);
-
-      td {
-        border-bottom-color: var(--border-primary);
-        color: var(--text-primary);
-        background-color: inherit; // 关键：让单元格背景继承行的背景，确保固定列同步
-      }
-    }
-    
-    // 修复固定列在 hover 时的背景色问题
-    .el-table__body tr:hover > td.el-table-fixed-column--right,
-    .el-table__body tr:hover > td.el-table__fixed-right {
-      background-color: var(--el-table-row-hover-bg-color);
-    }
-    
-    // 暗色模式下的斑马纹颜色修正
-    .el-table__body tr.el-table__row--striped {
-      td.el-table-fixed-column--right,
-      td.el-table__fixed-right {
-        background-color: #2a2a2a; // 暗色模式斑马纹
-      }
-    }
-  }
-
-  .el-pagination {
-    .el-pager {
-      .number {
-        background-color: var(--bg-tertiary);
-        border-color: var(--border-primary);
-        color: var(--text-primary);
-
-        &:hover {
-          color: var(--color-primary);
-        }
-
-        &.is-active {
-          background-color: var(--color-primary);
-          border-color: var(--color-primary);
-          color: white;
-        }
-      }
-    }
-
-    .el-pagination__jump {
-      .el-input__inner {
-        background-color: var(--bg-tertiary);
-        border-color: var(--border-primary);
-        color: var(--text-primary);
-      }
-    }
-  }
-
-  .el-timeline {
-    .el-timeline-item {
-      .el-timeline-item__content {
-        color: var(--text-primary);
-      }
-    }
-  }
-
-  .el-badge {
-    .el-badge__content {
-      background-color: var(--color-danger);
-    }
-  }
-
-  .el-dropdown-menu {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-primary);
-
-    .el-dropdown-menu__item {
+    .el-dialog__title {
+      font-size: 18px;
+      font-weight: 600;
       color: var(--text-primary);
+    }
+    
+    .el-dialog__headerbtn {
+      top: 20px;
+    }
+  }
 
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.05);
-        color: var(--color-primary);
+  .el-dialog__body {
+    padding: 24px;
+    color: var(--text-primary);
+    background-color: var(--bg-surface);
+  }
+
+  .el-dialog__footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light);
+    background-color: var(--bg-secondary);
+    text-align: right;
+  }
+}
+
+// =============================================================================
+// 全局统计卡片样式 (Stats Cards)
+// =============================================================================
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+
+  .stat-card {
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    background: var(--bg-primary);
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: transparent;
+    }
+
+    .el-card__body {
+      display: flex;
+      align-items: center;
+      padding: 24px 32px !important; // 强制覆盖
+    }
+
+    .stat-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 24px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      
+      .el-icon {
+        font-size: 32px;
+        color: white;
       }
 
-      &:focus {
-        background-color: rgba(255, 255, 255, 0.05);
+      &.bg-blue { 
+        background: linear-gradient(135deg, #3b82f6, #2563eb); 
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+      }
+      &.bg-green { 
+        background: linear-gradient(135deg, #10b981, #059669); 
+        box-shadow: 0 8px 16px rgba(5, 150, 105, 0.2);
+      }
+      &.bg-orange { 
+        background: linear-gradient(135deg, #f59e0b, #d97706); 
+        box-shadow: 0 8px 16px rgba(217, 119, 6, 0.2);
+      }
+      &.bg-purple {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        box-shadow: 0 8px 16px rgba(124, 58, 237, 0.2);
+      }
+      &.bg-red {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 8px 16px rgba(220, 38, 38, 0.2);
+      }
+    }
+
+    .stat-content {
+      .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.1;
+        letter-spacing: -0.5px;
+        font-family: 'Din Alternate', 'Roboto', sans-serif;
+      }
+
+      .stat-label {
+        font-size: 14px;
+        color: var(--text-tertiary);
+        margin-top: 6px;
+        font-weight: 500;
       }
     }
   }

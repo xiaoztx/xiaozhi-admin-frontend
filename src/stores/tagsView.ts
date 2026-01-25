@@ -104,6 +104,44 @@ export const useTagsViewStore = defineStore('tagsView', () => {
     cachedViews.value = []
   }
 
+  function delLeftViews(view: TagView) {
+    return new Promise((resolve) => {
+      const index = visitedViews.value.findIndex((v) => v.path === view.path)
+      if (index === -1) {
+        return
+      }
+      visitedViews.value = visitedViews.value.filter((item, i) => {
+        if (item.meta?.affix) {
+          return true
+        }
+        return i >= index
+      })
+      resolve({
+        visitedViews: [...visitedViews.value],
+        cachedViews: [...cachedViews.value],
+      })
+    })
+  }
+
+  function delRightViews(view: TagView) {
+    return new Promise((resolve) => {
+      const index = visitedViews.value.findIndex((v) => v.path === view.path)
+      if (index === -1) {
+        return
+      }
+      visitedViews.value = visitedViews.value.filter((item, i) => {
+        if (item.meta?.affix) {
+          return true
+        }
+        return i <= index
+      })
+      resolve({
+        visitedViews: [...visitedViews.value],
+        cachedViews: [...cachedViews.value],
+      })
+    })
+  }
+
   return {
     visitedViews,
     cachedViews,
@@ -113,5 +151,7 @@ export const useTagsViewStore = defineStore('tagsView', () => {
     delCachedView,
     delOthersViews,
     delAllViews,
+    delLeftViews,
+    delRightViews,
   }
 })

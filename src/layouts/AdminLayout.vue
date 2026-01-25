@@ -13,7 +13,7 @@
 
       <!-- 页面内容 -->
       <div class="content">
-        <router-view v-slot="{ Component }">
+        <router-view v-if="isRouterAlive" v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
             <keep-alive :include="cachedViews">
               <component :is="Component" />
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, provide, nextTick } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { useTagsViewStore } from '@/stores/tagsView'
 import AdminSidebar from '@/components/AdminSidebar.vue'
@@ -47,6 +47,15 @@ const themeClass = computed(() => themeStore.themeClass)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
 const isMobile = computed(() => window.innerWidth <= 768)
 const cachedViews = computed(() => tagsViewStore.cachedViews)
+
+const isRouterAlive = ref(true)
+const reload = () => {
+  isRouterAlive.value = false
+  nextTick(() => {
+    isRouterAlive.value = true
+  })
+}
+provide('reload', reload)
 
 const closeMobileMenu = () => {
   themeStore.closeMobileMenu()

@@ -20,6 +20,35 @@
       </router-link>
     </el-scrollbar>
 
+    <!-- 右侧操作按钮 -->
+    <el-dropdown trigger="click" class="tags-options" @command="handleTags">
+      <div class="tags-options-btn">
+        <el-icon><ArrowDown /></el-icon>
+      </div>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="refresh">
+            <el-icon><Refresh /></el-icon>刷新当前
+          </el-dropdown-item>
+          <el-dropdown-item command="close">
+            <el-icon><Close /></el-icon>关闭当前
+          </el-dropdown-item>
+          <el-dropdown-item command="closeOthers">
+            <el-icon><CircleClose /></el-icon>关闭其他
+          </el-dropdown-item>
+          <el-dropdown-item command="closeLeft">
+            <el-icon><Back /></el-icon>关闭左侧
+          </el-dropdown-item>
+          <el-dropdown-item command="closeRight">
+            <el-icon><Right /></el-icon>关闭右侧
+          </el-dropdown-item>
+          <el-dropdown-item command="closeAll" divided>
+            <el-icon><CircleClose /></el-icon>关闭所有
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+
     <ul v-show="visible" :style="{ left: left + 'px', top: top + 'px' }" class="contextmenu">
       <li @click="refreshSelectedTag(selectedTag)">刷新页面</li>
       <li v-if="!isAffix(selectedTag)" @click="closeSelectedTag(selectedTag)">关闭当前</li>
@@ -30,10 +59,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch, onMounted, ref, nextTick } from 'vue'
+import { computed, watch, onMounted, ref, nextTick, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTagsViewStore } from '@/stores/tagsView'
-import { Close } from '@element-plus/icons-vue'
+import { Close, ArrowDown, CircleClose, Back, Right, Refresh } from '@element-plus/icons-vue'
 import type { TagView } from '@/stores/tagsView'
 
 const tagsViewStore = useTagsViewStore()
@@ -44,6 +73,7 @@ const visible = ref(false)
 const top = ref(0)
 const left = ref(0)
 const selectedTag = ref<TagView>({})
+const reload = inject('reload') as Function
 
 const visitedViews = computed(() => tagsViewStore.visitedViews)
 
@@ -68,7 +98,7 @@ function openMenu(tag: TagView, e: MouseEvent) {
     left.value = left15
   }
 
-  top.value = e.clientY - 60 // 调整菜单位置，根据header高度
+  top.value = e.clientY - 60
   visible.value = true
   selectedTag.value = tag
 }
@@ -77,20 +107,77 @@ function closeMenu() {
   visible.value = false
 }
 
+function handleTags(command: string) {
+  const tag = isActive(selectedTag.value) ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || selectedTag.value)
+  
+  switch (command) {
+    case 'refresh':
+      refreshSelectedTag(tag)
+      break
+    case 'close':
+      closeSelectedTag(tag)
+      break
+    case 'closeOthers':
+      closeOthersTags()
+      break
+    case 'closeAll':
+      closeAllTags(tag)
+      break
+    case 'closeLeft':
+      closeLeftTags()
+      break
+    case 'closeRight':
+      closeRightTags()
+      break
+  }
+}
+
 function refreshSelectedTag(view: TagView) {
   tagsViewStore.delCachedView(view)
-  const { fullPath } = view
-  nextTick(() => {
-    router.replace({
-      path: '/redirect' + fullPath
-    })
+  if (view.path === route.path) {
+    reload()
+  } else {
+    router.push(view.path!)
+  }
+}
+
+function closeSelectedTag(view: TagView) {
+  tagsViewStore.delView(view).then((res: any) => {
+    if (isActive(view)) {
+      toLastView(res.visitedViews, view)
+    }
   })
 }
 
 function closeOthersTags() {
-  router.push(selectedTag.value)
-  tagsViewStore.delOthersViews(selectedTag.value).then(() => {
+  const tag = selectedTag.value.path ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || visitedViews.value[0])
+  if (!tag) return
+  
+  router.push(tag)
+  tagsViewStore.delOthersViews(tag).then(() => {
     // 刷新
+  })
+}
+
+function closeLeftTags() {
+  const tag = selectedTag.value.path ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || visitedViews.value[0])
+  if (!tag) return
+  
+  tagsViewStore.delLeftViews(tag).then((res: any) => {
+    if (!res.visitedViews.find((i: any) => i.path === route.path)) {
+      toLastView(res.visitedViews, tag)
+    }
+  })
+}
+
+function closeRightTags() {
+  const tag = selectedTag.value.path ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || visitedViews.value[0])
+  if (!tag) return
+
+  tagsViewStore.delRightViews(tag).then((res: any) => {
+    if (!res.visitedViews.find((i: any) => i.path === route.path)) {
+      toLastView(res.visitedViews, tag)
+    }
   })
 }
 
@@ -116,14 +203,6 @@ function addTags() {
   if (name) {
     tagsViewStore.addView(route)
   }
-}
-
-function closeSelectedTag(view: TagView) {
-  tagsViewStore.delView(view).then((res: any) => {
-    if (isActive(view)) {
-      toLastView(res.visitedViews, view)
-    }
-  })
 }
 
 function toLastView(visitedViews: TagView[], view: TagView) {
@@ -159,7 +238,7 @@ watch(
     const affixTags: TagView[] = [
       {
         path: '/',
-        meta: { title: '仪表盘', affix: true },
+        meta: { title: '首页', affix: true },
         fullPath: '/',
         name: 'Dashboard'
       }
@@ -211,7 +290,8 @@ watch(
   align-items: center;
 
   .tags-view-wrapper {
-    width: 100%;
+    flex: 1; // 占据剩余空间
+    overflow: hidden; // 防止溢出
     
     :deep(.el-scrollbar__view) {
       display: flex;
@@ -277,6 +357,30 @@ watch(
           background-color: rgba(0, 0, 0, 0.1);
           color: var(--text-primary);
         }
+      }
+    }
+  }
+  
+  // 右侧操作按钮样式
+  .tags-options {
+    height: 100%;
+    
+    .tags-options-btn {
+      width: 40px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-left: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      background-color: var(--bg-primary);
+      z-index: 10;
+      
+      &:hover {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
       }
     }
   }

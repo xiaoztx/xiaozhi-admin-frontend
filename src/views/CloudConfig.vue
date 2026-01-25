@@ -513,61 +513,7 @@ onMounted(() => {
   margin: 0 auto;
 
   .stats-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
-    margin-bottom: 24px;
-
-    .stat-card {
-      border: none;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      overflow: hidden;
-
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-md);
-      }
-
-      :deep(.el-card__body) {
-        display: flex;
-        align-items: center;
-        padding: 24px;
-      }
-
-      .stat-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 20px;
-        
-        .el-icon {
-          font-size: 28px;
-          color: white;
-        }
-
-        &.bg-blue { background: linear-gradient(135deg, #409EFF, #0073e6); }
-        &.bg-green { background: linear-gradient(135deg, #67C23A, #4e9e2b); }
-        &.bg-orange { background: linear-gradient(135deg, #E6A23C, #cf881e); }
-      }
-
-      .stat-content {
-        .stat-value {
-          font-size: 28px;
-          font-weight: 700;
-          color: var(--text-primary);
-          line-height: 1.2;
-        }
-
-        .stat-label {
-          font-size: 14px;
-          color: var(--text-secondary);
-          margin-top: 4px;
-        }
-      }
-    }
+    // 这里的样式已经提取到全局 main.scss
   }
 
   .main-card {

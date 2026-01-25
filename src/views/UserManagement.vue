@@ -93,8 +93,13 @@
         <el-table-column label="用户名" min-width="180">
           <template #default="{ row }">
             <div class="user-info-cell">
-              <el-avatar :size="32" class="user-avatar" :style="{ backgroundColor: getAvatarColor(row.username) }">
-                {{ row.username.charAt(0).toUpperCase() }}
+              <el-avatar 
+                :size="32" 
+                class="user-avatar" 
+                :src="row.avatar" 
+                :style="!row.avatar ? { backgroundColor: getAvatarColor(row.username) } : {}"
+              >
+                {{ !row.avatar ? row.username.charAt(0).toUpperCase() : '' }}
               </el-avatar>
               <span class="username">{{ row.username }}</span>
             </div>
@@ -174,7 +179,7 @@
     >
       <template #header>
         <div class="dialog-header">
-          <el-icon size="22" class="mr-2" :color="isEdit ? '#409EFF' : '#67C23A'">
+          <el-icon size="22" class="mr-2 dialog-icon" :class="isEdit ? 'primary' : 'success'">
             <Edit v-if="isEdit" />
             <UserFilled v-else />
           </el-icon>
@@ -624,27 +629,22 @@ onMounted(() => {
     justify-content: flex-end;
     margin-top: 24px;
   }
-
-  :deep(.user-dialog) {
-    .el-dialog__header {
-      margin-right: 0;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border-light);
+  
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    
+    .dialog-icon {
+      &.primary { color: var(--color-primary); }
+      &.success { color: var(--color-success); }
     }
-
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      
-      .dialog-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-primary);
-        line-height: 1;
-        display: flex;
-        align-items: center;
-      }
+    
+    .dialog-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1;
     }
   }
 }

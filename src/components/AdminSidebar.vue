@@ -43,7 +43,7 @@
               <div class="nav-icon">
                 <el-icon><House /></el-icon>
               </div>
-              <span v-if="!isCollapsed" class="nav-label">仪表盘</span>
+              <span v-if="!isCollapsed" class="nav-label">首页</span>
               <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/' }"></div>
             </router-link>
           </li>
@@ -233,6 +233,20 @@
 
           <li class="nav-item">
             <router-link
+              to="/notifications"
+              class="nav-link"
+              :class="{ active: $route.path === '/notifications' }"
+            >
+              <div class="nav-icon">
+                <el-icon><Bell /></el-icon>
+              </div>
+              <span v-if="!isCollapsed" class="nav-label">消息通知</span>
+              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/notifications' }"></div>
+            </router-link>
+          </li>
+
+          <li class="nav-item">
+            <router-link
               to="/logs"
               class="nav-link"
               :class="{ active: $route.path === '/logs' }"
@@ -274,7 +288,8 @@ import {
   Link,
   Tools,
   DocumentCopy,
-  ArrowRight
+  ArrowRight,
+  Bell
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

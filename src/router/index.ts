@@ -23,7 +23,7 @@ const router = createRouter({
           path: '',
           name: 'home',
           component: () => import('@/views/Dashboard.vue'),
-          meta: { title: '仪表盘', affix: true }
+          meta: { title: '首页', affix: true }
         },
         {
           path: 'users',
@@ -78,6 +78,12 @@ const router = createRouter({
           name: 'settings',
           component: () => import('@/views/SystemSettings.vue'),
           meta: { title: '系统设置' }
+        },
+        {
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/Notifications.vue'),
+          meta: { title: '消息通知' }
         },
         {
           path: 'logs',
