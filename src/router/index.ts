@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { useSystemStore } from '@/stores/system'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -108,6 +109,13 @@ router.beforeEach((to, _from, next) => {
   } else {
     next()
   }
+})
+
+router.afterEach((to) => {
+  const systemStore = useSystemStore()
+  const siteName = systemStore.siteName || '咔吥哆管理系统'
+  const title = to.meta.title ? `${to.meta.title} - ${siteName}` : siteName
+  document.title = title
 })
 
 export default router

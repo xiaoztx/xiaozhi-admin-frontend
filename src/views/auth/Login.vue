@@ -6,7 +6,7 @@
           <div class="logo-circle">
             <el-icon><Monitor /></el-icon>
           </div>
-          <h1>咔吥哆管理系统</h1>
+          <h1>{{ siteName }}</h1>
           <p class="subtitle">现代化、高效的企业级后台管理解决方案</p>
           <ul class="features">
             <li><el-icon><Check /></el-icon> 智能云资源管理</li>
@@ -51,7 +51,7 @@
 
             <div class="form-options">
               <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
-              <el-link type="primary" :underline="false">忘记密码？</el-link>
+              <el-link type="primary" underline="never">忘记密码？</el-link>
             </div>
 
             <el-button 
@@ -71,11 +71,15 @@
               <el-icon class="mr-1"><User /></el-icon> 游客访问
             </el-button>
 
-            <div class="auth-footer">
+            <div class="auth-footer" v-if="systemStore.allowRegister">
               还没有账户？ 
-              <el-link type="primary" :underline="false" @click="$router.push('/register')">
+              <el-link type="primary" underline="never" @click="$router.push('/register')">
                 立即注册
               </el-link>
+            </div>
+            <div class="registration-closed" v-else>
+              <el-icon class="mr-1"><InfoFilled /></el-icon>
+              <span>新用户注册已关闭</span>
             </div>
           </el-form>
         </div>
@@ -85,14 +89,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { User, Lock, Monitor, Check } from '@element-plus/icons-vue'
+import { User, Lock, Monitor, Check, InfoFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
+import { useSystemStore } from '@/stores/system'
 
 const router = useRouter()
+const systemStore = useSystemStore()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 const guestLoading = ref(false)
@@ -101,6 +107,12 @@ const loginForm = reactive({
   username: '',
   password: '',
   remember: false
+})
+
+const siteName = computed(() => systemStore.siteName)
+
+onMounted(() => {
+  systemStore.loadSettings()
 })
 
 const loginRules = reactive<FormRules>({
@@ -325,10 +337,36 @@ const handleGuestLogin = async () => {
           margin-left: 0;
         }
 
+        .guest-btn {
+          width: 100%;
+          height: 44px;
+          font-size: 16px;
+          margin-bottom: 24px;
+          margin-left: 0;
+        }
+
         .auth-footer {
           text-align: center;
           font-size: 14px;
           color: var(--text-secondary);
+        }
+
+        .registration-closed {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 12px;
+          background-color: var(--bg-secondary);
+          border-radius: var(--radius-md);
+          color: var(--text-secondary);
+          font-size: 13px;
+          margin-top: 16px;
+
+          .el-icon {
+            color: var(--text-tertiary);
+            margin-right: 6px;
+            font-size: 14px;
+          }
         }
       }
     }

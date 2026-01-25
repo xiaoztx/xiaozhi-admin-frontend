@@ -59,21 +59,70 @@
 
               <div class="form-section">
                 <div class="section-title">Logo 设置</div>
-                <div class="logo-uploader">
-                  <el-upload
-                    class="avatar-uploader"
-                    action="#"
-                    :show-file-list="false"
-                    :auto-upload="false"
-                    :on-change="handleLogoChange"
-                  >
-                    <img v-if="basicForm.logoUrl" :src="basicForm.logoUrl" class="avatar" />
-                    <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-                  </el-upload>
-                  <div class="upload-tip">
-                    <p>建议尺寸: 200x200px</p>
-                    <p>支持格式: PNG, JPG, SVG</p>
-                    <el-button text type="primary" size="small">点击上传</el-button>
+                
+                <el-form-item label="Logo 图标">
+                  <div class="logo-input-wrapper">
+                    <el-input 
+                      v-model="basicForm.logoUrl" 
+                      placeholder="请输入图片 URL 或点击右侧图标上传" 
+                      clearable
+                    >
+                      <template #prefix>
+                        <el-icon><Link /></el-icon>
+                      </template>
+                      <template #suffix>
+                        <el-upload
+                          action="#"
+                          :show-file-list="false"
+                          :auto-upload="false"
+                          :on-change="handleLogoChange"
+                          class="upload-trigger"
+                        >
+                          <el-icon class="folder-icon" title="上传本地图片"><FolderOpened /></el-icon>
+                        </el-upload>
+                      </template>
+                    </el-input>
+                    <div class="item-desc mt-2">支持网络图片链接，或点击文件夹图标上传本地图片（建议尺寸 200x200px）</div>
+                  </div>
+                </el-form-item>
+
+                <div class="url-preview" v-if="basicForm.logoUrl">
+                  <div class="preview-label">预览：</div>
+                  <div class="preview-box">
+                      <img :src="basicForm.logoUrl" class="preview-img" alt="Logo Preview" @error="handleImgError" />
+                  </div>
+                </div>
+
+                <el-form-item label="Favicon 图标" class="mt-4">
+                  <div class="logo-input-wrapper">
+                    <el-input 
+                      v-model="basicForm.faviconUrl" 
+                      placeholder="请输入图标 URL 或点击右侧图标上传" 
+                      clearable
+                    >
+                      <template #prefix>
+                        <el-icon><Link /></el-icon>
+                      </template>
+                      <template #suffix>
+                        <el-upload
+                          action="#"
+                          :show-file-list="false"
+                          :auto-upload="false"
+                          :on-change="handleFaviconChange"
+                          class="upload-trigger"
+                        >
+                          <el-icon class="folder-icon" title="上传本地图标"><FolderOpened /></el-icon>
+                        </el-upload>
+                      </template>
+                    </el-input>
+                    <div class="item-desc mt-2">浏览器标签页图标（建议尺寸 32x32px 或 16x16px，支持 .ico, .png）</div>
+                  </div>
+                </el-form-item>
+
+                <div class="url-preview" v-if="basicForm.faviconUrl">
+                  <div class="preview-label">预览：</div>
+                  <div class="preview-box sm">
+                      <img :src="basicForm.faviconUrl" class="preview-img" alt="Favicon Preview" @error="handleImgError" />
                   </div>
                 </div>
               </div>
@@ -273,21 +322,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { Plus, Key } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted } from 'vue'
+import { Key, Link, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { getSystemSettings, updateSystemSettings } from '@/api/system-setting'
+import { useSystemStore } from '@/stores/system'
 
 const activeTab = ref('basic')
 const saving = ref(false)
+const systemStore = useSystemStore()
 
 // 基本设置数据
 const basicForm = reactive({
-  siteName: '咔吥哆管理系统',
-  adminEmail: 'admin@xiaozhi.ai',
-  description: '一个现代化、高效的后台管理系统',
-  copyright: '© 2024 XiaoZhi Inc.',
-  icp: '京ICP备12345678号',
-  logoUrl: ''
+  siteName: '',
+  adminEmail: '',
+  description: '',
+  copyright: '',
+  icp: '',
+  logoUrl: '',
+  faviconUrl: ''
 })
 
 // 安全设置数据
@@ -303,27 +356,143 @@ const securityForm = reactive({
 
 // 通知设置数据
 const notificationForm = reactive({
-  enableEmail: true,
-  smtpHost: 'smtp.gmail.com',
-  smtpPort: '465',
-  senderEmail: 'notify@xiaozhi.ai',
-  senderName: 'XiaoZhi Admin',
+  enableEmail: false,
+  smtpHost: '',
+  smtpPort: '',
+  senderEmail: '',
+  senderName: '',
   smtpPassword: '',
   // Webhook 配置
   enableWebhook: false,
   webhookUrl: '',
   webhookMethod: 'POST',
   customTemplate: false,
-  templateBody: '{\n  "msg_type": "text",\n  "content": {\n    "text": "{{title}}\\n{{content}}"\n  }\n}'
+  templateBody: ''
+})
+
+// 初始化加载配置
+onMounted(async () => {
+  try {
+    const { data } = await getSystemSettings()
+    if (data) {
+      // 映射基本设置
+      basicForm.siteName = data.site_name || ''
+      basicForm.adminEmail = data.admin_email || ''
+      basicForm.description = data.site_desc || ''
+      basicForm.copyright = data.copyright || ''
+      basicForm.icp = data.icp || ''
+      basicForm.logoUrl = data.logo_url || ''
+      basicForm.faviconUrl = data.site_favicon || ''
+      
+      // 映射安全设置
+      securityForm.allowRegister = data.allow_register === 'true' || data.allow_register === true
+      securityForm.forceHttps = data.force_https === 'true' || data.force_https === true
+      securityForm.enableInviteCode = data.enable_invite_code === 'true' || data.enable_invite_code === true
+      securityForm.inviteCode = data.invite_code || ''
+      securityForm.loginLockCount = parseInt(data.login_lock_count) || 5
+      securityForm.minPasswordLength = parseInt(data.min_password_length) || 8
+      
+      // 密码复杂度处理
+      if (data.password_complexity) {
+        if (typeof data.password_complexity === 'string') {
+          try {
+            securityForm.passwordComplexity = JSON.parse(data.password_complexity)
+          } catch (e) {
+            securityForm.passwordComplexity = []
+          }
+        } else {
+          securityForm.passwordComplexity = data.password_complexity
+        }
+      }
+
+      // 映射通知设置
+      notificationForm.enableEmail = data.enable_email === 'true' || data.enable_email === true
+      notificationForm.smtpHost = data.smtp_host || ''
+      notificationForm.smtpPort = data.smtp_port || ''
+      notificationForm.senderEmail = data.sender_email || ''
+      notificationForm.senderName = data.sender_name || ''
+      notificationForm.smtpPassword = data.smtp_password || ''
+      notificationForm.enableWebhook = data.enable_webhook === 'true' || data.enable_webhook === true
+      notificationForm.webhookUrl = data.webhook_url || ''
+      notificationForm.webhookMethod = data.webhook_method || 'POST'
+      notificationForm.customTemplate = data.custom_template === 'true' || data.custom_template === true
+      
+      // 模板内容处理
+      if (data.template_body) {
+        if (typeof data.template_body === 'string') {
+           notificationForm.templateBody = data.template_body
+        } else {
+           notificationForm.templateBody = JSON.stringify(data.template_body, null, 2)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error)
+    ElMessage.error('加载系统配置失败')
+  }
 })
 
 // 方法
-const handleSave = () => {
+const handleSave = async () => {
   saving.value = true
-  setTimeout(() => {
-    saving.value = false
+  try {
+    const payload = {
+      // 基本设置
+      site_name: basicForm.siteName,
+      admin_email: basicForm.adminEmail,
+      site_desc: basicForm.description,
+      copyright: basicForm.copyright,
+      icp: basicForm.icp,
+      logo_url: basicForm.logoUrl,
+      site_favicon: basicForm.faviconUrl,
+
+      // 安全设置
+      allow_register: securityForm.allowRegister,
+      force_https: securityForm.forceHttps,
+      enable_invite_code: securityForm.enableInviteCode,
+      invite_code: securityForm.inviteCode,
+      login_lock_count: securityForm.loginLockCount,
+      min_password_length: securityForm.minPasswordLength,
+      password_complexity: securityForm.passwordComplexity,
+
+      // 通知设置
+      enable_email: notificationForm.enableEmail,
+      smtp_host: notificationForm.smtpHost,
+      smtp_port: notificationForm.smtpPort,
+      sender_email: notificationForm.senderEmail,
+      sender_name: notificationForm.senderName,
+      smtp_password: notificationForm.smtpPassword,
+      enable_webhook: notificationForm.enableWebhook,
+      webhook_url: notificationForm.webhookUrl,
+      webhook_method: notificationForm.webhookMethod,
+      custom_template: notificationForm.customTemplate,
+      template_body: notificationForm.templateBody
+    }
+
+    await updateSystemSettings(payload)
+    
+    // 更新 Favicon
+    if (basicForm.faviconUrl) {
+      let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement
+      if (!link) {
+        link = document.createElement('link')
+      }
+      link.type = 'image/x-icon'
+      link.rel = 'shortcut icon'
+      link.href = basicForm.faviconUrl
+      document.getElementsByTagName('head')[0]?.appendChild(link)
+    }
+
+    // 刷新系统配置 Store
+    await systemStore.loadSettings()
+
     ElMessage.success('配置保存成功')
-  }, 1000)
+  } catch (error) {
+    console.error('Failed to save settings:', error)
+    ElMessage.error('保存配置失败')
+  } finally {
+    saving.value = false
+  }
 }
 
 const handleReset = () => {
@@ -338,6 +507,22 @@ const handleLogoChange = (file: any) => {
     basicForm.logoUrl = e.target?.result as string
   }
   reader.readAsDataURL(file.raw)
+}
+
+const handleFaviconChange = (file: any) => {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    basicForm.faviconUrl = e.target?.result as string
+  }
+  reader.readAsDataURL(file.raw)
+}
+
+const handleImgError = (e: Event) => {
+  const target = e.target as HTMLImageElement
+  if (target) {
+     // 可以设置一个默认图或者提示错误
+     // target.src = 'default-logo.png' 
+  }
 }
 
 const generateInviteCode = () => {
@@ -526,51 +711,61 @@ const handleTestWebhook = () => {
     }
   }
 
-  .logo-uploader {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-
-    .avatar-uploader {
-      :deep(.el-upload) {
-        border: 1px dashed var(--border-medium);
-        border-radius: 8px;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        transition: border-color 0.3s;
-        width: 100px;
-        height: 100px;
-        background-color: var(--bg-secondary);
-
+  .logo-input-wrapper {
+    width: 100%;
+    
+    .upload-trigger {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      margin-right: 4px;
+      
+      .folder-icon {
+        font-size: 18px;
+        color: var(--text-secondary);
+        transition: color 0.3s;
+        
         &:hover {
-          border-color: var(--color-primary);
+          color: var(--color-primary);
         }
       }
     }
+  }
 
-    .avatar-uploader-icon {
-      font-size: 28px;
-      color: var(--text-tertiary);
-      width: 100px;
-      height: 100px;
-      text-align: center;
-      line-height: 100px;
+  .url-preview {
+    margin-top: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    .preview-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
     }
 
-    .avatar {
+    .preview-box {
       width: 100px;
       height: 100px;
-      display: block;
-      object-fit: cover;
-    }
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 4px;
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-    .upload-tip {
-      p {
-        margin: 0 0 4px 0;
-        font-size: 12px;
-        color: var(--text-secondary);
+      .preview-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
       }
+    }
+    
+    .preview-box.sm {
+      width: 48px;
+      height: 48px;
+      padding: 2px;
     }
   }
 }

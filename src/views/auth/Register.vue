@@ -66,12 +66,20 @@
               />
             </el-form-item>
 
+            <el-form-item prop="inviteCode" v-if="systemStore.enableInviteCode">
+              <el-input 
+                v-model="registerForm.inviteCode" 
+                placeholder="注册邀请码"
+                :prefix-icon="Key"
+              />
+            </el-form-item>
+
             <el-form-item prop="agreement">
               <el-checkbox v-model="registerForm.agreement">
                 我已阅读并同意 
-                <el-link type="primary" :underline="false">服务条款</el-link> 
+                <el-link type="primary" underline="never">服务条款</el-link> 
                 和 
-                <el-link type="primary" :underline="false">隐私政策</el-link>
+                <el-link type="primary" underline="never">隐私政策</el-link>
               </el-checkbox>
             </el-form-item>
 
@@ -79,15 +87,14 @@
               type="primary" 
               class="submit-btn" 
               :loading="loading" 
-              disabled
               @click="handleRegister"
             >
-              注册已暂停
+              注册
             </el-button>
 
             <div class="auth-footer">
               已有账户？ 
-              <el-link type="primary" :underline="false" @click="$router.push('/login')">
+              <el-link type="primary" underline="never" @click="router.push('/login')">
                 立即登录
               </el-link>
             </div>
@@ -99,13 +106,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { User, Lock, Monitor, Check, Message } from '@element-plus/icons-vue'
+import { User, Lock, Monitor, Check, Message, Key } from '@element-plus/icons-vue'
+import { useSystemStore } from '@/stores/system'
 
 const router = useRouter()
+const systemStore = useSystemStore()
 const registerFormRef = ref<FormInstance>()
 const loading = ref(false)
 
@@ -114,7 +123,19 @@ const registerForm = reactive({
   email: '',
   password: '',
   confirmPassword: '',
+  inviteCode: '',
   agreement: false
+})
+
+onMounted(async () => {
+  // 确保配置已加载
+  await systemStore.loadSettings()
+  
+  // 如果不允许注册，跳转回登录页
+  if (!systemStore.allowRegister) {
+    ElMessage.warning('系统当前暂停新用户注册')
+    router.replace('/login')
+  }
 })
 
 const validatePass2 = (_rule: any, value: string, callback: any) => {
@@ -127,34 +148,65 @@ const validatePass2 = (_rule: any, value: string, callback: any) => {
   }
 }
 
-const registerRules = reactive<FormRules>({
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '长度至少为 3 个字符', trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: '请输入电子邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为 6 个字符', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, validator: validatePass2, trigger: 'blur' }
-  ],
-  agreement: [
-    { 
-      validator: (_rule, value, callback) => {
-        if (!value) {
-          callback(new Error('请阅读并同意协议'))
-        } else {
-          callback()
-        }
-      }, 
-      trigger: 'change' 
-    }
-  ]
+// 密码复杂度验证
+const validatePasswordComplexity = (_rule: any, value: string, callback: any) => {
+  if (!value) return callback()
+  
+  const rules = systemStore.passwordComplexity
+  if (rules.includes('uppercase') && !/[A-Z]/.test(value)) {
+    return callback(new Error('密码必须包含大写字母'))
+  }
+  if (rules.includes('lowercase') && !/[a-z]/.test(value)) {
+    return callback(new Error('密码必须包含小写字母'))
+  }
+  if (rules.includes('numbers') && !/[0-9]/.test(value)) {
+    return callback(new Error('密码必须包含数字'))
+  }
+  if (rules.includes('symbols') && !/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+    return callback(new Error('密码必须包含特殊符号'))
+  }
+  callback()
+}
+
+const registerRules = computed<FormRules>(() => {
+  const rules: FormRules = {
+    username: [
+      { required: true, message: '请输入用户名', trigger: 'blur' },
+      { min: 3, message: '长度至少为 3 个字符', trigger: 'blur' }
+    ],
+    email: [
+      { required: true, message: '请输入电子邮箱', trigger: 'blur' },
+      { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+    ],
+    password: [
+      { required: true, message: '请输入密码', trigger: 'blur' },
+      { min: systemStore.minPasswordLength, message: `密码长度至少为 ${systemStore.minPasswordLength} 个字符`, trigger: 'blur' },
+      { validator: validatePasswordComplexity, trigger: 'blur' }
+    ],
+    confirmPassword: [
+      { required: true, validator: validatePass2, trigger: 'blur' }
+    ],
+    agreement: [
+      { 
+        validator: (_rule, value, callback) => {
+          if (!value) {
+            callback(new Error('请阅读并同意协议'))
+          } else {
+            callback()
+          }
+        }, 
+        trigger: 'change' 
+      }
+    ]
+  }
+
+  if (systemStore.enableInviteCode) {
+    rules.inviteCode = [
+      { required: true, message: '请输入注册邀请码', trigger: 'blur' }
+    ]
+  }
+
+  return rules
 })
 
 const handleRegister = async () => {

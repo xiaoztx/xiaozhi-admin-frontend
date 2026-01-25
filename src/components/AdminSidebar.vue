@@ -7,13 +7,14 @@
     <div class="sidebar-header">
       <div class="logo-section">
         <div class="logo-wrapper">
-          <div class="logo-icon">
+          <div class="logo-icon" v-if="!logoUrl">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
+          <img v-else :src="logoUrl" class="logo-img" alt="Logo" />
           <div v-if="!isCollapsed" class="logo-text">
-            <div class="brand-name">咔吥哆</div>
+            <div class="brand-name">{{ siteName }}</div>
             <div class="brand-subtitle">Admin System</div>
           </div>
         </div>
@@ -279,6 +280,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useSystemStore } from '@/stores/system'
 import {
   House,
   User,
@@ -294,11 +296,15 @@ import {
 
 const route = useRoute()
 const themeStore = useThemeStore()
+const systemStore = useSystemStore()
 
 const isCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
 const isMobile = computed(() => window.innerWidth <= 768)
 const isGithubExpanded = ref(false)
+
+const siteName = computed(() => systemStore.siteName)
+const logoUrl = computed(() => systemStore.logoUrl)
 
 // 监听路由变化，自动展开对应菜单
 watch(() => route.path, (newPath) => {
@@ -456,11 +462,19 @@ const handleMouseLeave = () => {
         align-items: center;
         justify-content: center;
         color: var(--text-inverse);
+        flex-shrink: 0;
 
         svg {
           width: 16px;
           height: 16px;
         }
+      }
+
+      .logo-img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        border-radius: var(--radius-sm);
       }
 
       .logo-text {

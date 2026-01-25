@@ -3,7 +3,14 @@
 </template>
 
 <script setup lang="ts">
-// AdminLayout will be handled by router configuration
+import { onMounted } from 'vue'
+import { useSystemStore } from '@/stores/system'
+
+const systemStore = useSystemStore()
+
+onMounted(() => {
+  systemStore.loadSettings()
+})
 </script>
 
 <style>
