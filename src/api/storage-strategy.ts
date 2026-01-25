@@ -34,3 +34,12 @@ export const deleteStorageStrategy = (id: number) => {
     method: 'delete'
   })
 }
+
+// 获取存储策略下的文件列表
+export const getStrategyFiles = (id: number, params: any) => {
+  return request({
+    url: `/storage-strategies/${id}/files`,
+    method: 'get',
+    params
+  })
+}
