@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useSystemStore } from '@/stores/system'
+import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,7 +32,7 @@ const router = createRouter({
           path: 'users',
           name: 'users',
           component: () => import('@/views/UserManagement.vue'),
-          meta: { title: '用户管理' }
+          meta: { title: '用户管理', roles: ['super_admin', 'admin', 'guest'] }
         },
         {
           path: 'cloud-config',
@@ -78,7 +80,7 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/SystemSettings.vue'),
-          meta: { title: '系统设置' }
+          meta: { title: '系统设置', roles: ['super_admin', 'admin', 'guest'] }
         },
         {
           path: 'notifications',
@@ -100,6 +102,7 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const userStore = useUserStore()
 
   if (requiresAuth && !token) {
     next('/login')
@@ -107,6 +110,17 @@ router.beforeEach((to, _from, next) => {
     // 如果已登录，访问登录页重定向到首页
     next('/')
   } else {
+    // 权限检查
+    if (to.meta.roles && Array.isArray(to.meta.roles)) {
+      const roles = to.meta.roles as string[]
+      const userRole = userStore.userInfo.role
+      
+      if (!roles.includes(userRole)) {
+        ElMessage.error('无权访问该页面')
+        next('/')
+        return
+      }
+    }
     next()
   }
 })

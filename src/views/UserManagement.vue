@@ -61,7 +61,7 @@
         </div>
 
         <div class="right-tools">
-          <el-button type="primary" @click="handleAddUser">
+          <el-button type="primary" @click="handleAddUser" v-if="!isGuestRestricted">
             <el-icon class="mr-1"><Plus /></el-icon> 新增用户
           </el-button>
           <el-button @click="handleRefresh" :loading="refreshLoading" circle>
@@ -72,6 +72,7 @@
             plain 
             :disabled="selectedUsers.length === 0"
             @click="handleBatchDelete"
+            v-if="!isGuestRestricted"
           >
             批量删除
           </el-button>
@@ -125,7 +126,7 @@
               inline-prompt
               active-text="正常"
               inactive-text="禁用"
-              :disabled="row.role === 'super_admin'"
+              :disabled="row.role === 'super_admin' || isGuestRestricted"
               :before-change="() => handleStatusChange(row)"
             />
           </template>
@@ -137,7 +138,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column label="操作" width="180" fixed="right" align="center" v-if="!isGuestRestricted">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-divider direction="vertical" />
@@ -259,6 +260,16 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { User, Search, Plus, RefreshRight, Edit, UserFilled, Message, Lock, Key } from '@element-plus/icons-vue'
 import { getUsers, createUser, updateUser, deleteUser } from '@/api/user'
+import { useUserStore } from '@/stores/user'
+import { useSystemStore } from '@/stores/system'
+
+const userStore = useUserStore()
+const systemStore = useSystemStore()
+
+// 是否处于游客限制模式（Disable Mode）
+const isGuestRestricted = computed(() => {
+  return userStore.userInfo.role === 'guest' && systemStore.guestLimitMode === 'disable'
+})
 
 // 统计数据
 const statistics = computed(() => [

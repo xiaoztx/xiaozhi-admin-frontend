@@ -9,7 +9,7 @@
           </div>
           <div class="header-right">
             <el-button @click="handleReset">重置更改</el-button>
-            <el-button type="primary" :loading="saving" @click="handleSave">保存所有配置</el-button>
+            <el-button type="primary" :loading="saving" @click="handleSave" :disabled="isGuestRestricted">保存所有配置</el-button>
           </div>
         </div>
       </template>
@@ -140,6 +140,19 @@
                   <div class="flex-column">
                     <el-switch v-model="securityForm.allowRegister" />
                     <div class="item-desc mt-2">关闭后将无法注册新账号，仅管理员可添加</div>
+                  </div>
+                </el-form-item>
+
+                <el-form-item label="游客限制模式">
+                  <div class="flex-column">
+                    <el-radio-group v-model="securityForm.guestLimitMode">
+                      <el-radio value="mock" label="演示模式" />
+                      <el-radio value="disable" label="只读模式" />
+                    </el-radio-group>
+                    <div class="item-desc mt-2">
+                      <span v-if="securityForm.guestLimitMode === 'mock'">演示模式：游客可操作界面，后端拦截写入（推荐用于演示）</span>
+                      <span v-else>只读模式：界面上禁用/隐藏所有写操作按钮</span>
+                    </div>
                   </div>
                 </el-form-item>
                 
@@ -322,15 +335,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { Key, Link, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getSystemSettings, updateSystemSettings } from '@/api/system-setting'
 import { useSystemStore } from '@/stores/system'
+import { useUserStore } from '@/stores/user'
 
 const activeTab = ref('basic')
 const saving = ref(false)
 const systemStore = useSystemStore()
+const userStore = useUserStore()
+
+const isGuest = computed(() => userStore.userInfo.role === 'guest')
+const isGuestRestricted = computed(() => {
+  return isGuest.value && systemStore.guestLimitMode === 'disable'
+})
 
 // 基本设置数据
 const basicForm = reactive({
@@ -351,7 +371,8 @@ const securityForm = reactive({
   inviteCode: '',
   loginLockCount: 5,
   minPasswordLength: 8,
-  passwordComplexity: ['uppercase', 'lowercase', 'numbers']
+  passwordComplexity: ['uppercase', 'lowercase', 'numbers'],
+  guestLimitMode: 'mock'
 })
 
 // 通知设置数据
@@ -391,6 +412,7 @@ onMounted(async () => {
       securityForm.inviteCode = data.invite_code || ''
       securityForm.loginLockCount = parseInt(data.login_lock_count) || 5
       securityForm.minPasswordLength = parseInt(data.min_password_length) || 8
+      securityForm.guestLimitMode = data.guest_limit_mode || 'mock'
       
       // 密码复杂度处理
       if (data.password_complexity) {
@@ -434,6 +456,10 @@ onMounted(async () => {
 
 // 方法
 const handleSave = async () => {
+  if (isGuestRestricted.value) {
+    ElMessage.warning('当前处于只读模式，无法保存配置')
+    return
+  }
   saving.value = true
   try {
     const payload = {
@@ -454,6 +480,7 @@ const handleSave = async () => {
       login_lock_count: securityForm.loginLockCount,
       min_password_length: securityForm.minPasswordLength,
       password_complexity: securityForm.passwordComplexity,
+      guest_limit_mode: securityForm.guestLimitMode,
 
       // 通知设置
       enable_email: notificationForm.enableEmail,

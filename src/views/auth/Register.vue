@@ -209,18 +209,29 @@ const registerRules = computed<FormRules>(() => {
   return rules
 })
 
+import axios from 'axios'
+
 const handleRegister = async () => {
   if (!registerFormRef.value) return
   
-  await registerFormRef.value.validate((valid) => {
+  await registerFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
-      // 模拟注册请求
-      setTimeout(() => {
-        loading.value = false
+      try {
+        await axios.post('http://localhost:8081/api/v1/auth/register', {
+          username: registerForm.username,
+          password: registerForm.password,
+          email: registerForm.email,
+          inviteCode: registerForm.inviteCode
+        })
+        
         ElMessage.success('注册成功，请登录')
         router.push('/login')
-      }, 1500)
+      } catch (error: any) {
+        ElMessage.error(error.response?.data?.error || '注册失败，请稍后重试')
+      } finally {
+        loading.value = false
+      }
     }
   })
 }

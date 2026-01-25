@@ -96,9 +96,11 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock, Monitor, Check, InfoFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { useSystemStore } from '@/stores/system'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const systemStore = useSystemStore()
+const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 const guestLoading = ref(false)
@@ -142,7 +144,7 @@ const handleLogin = async () => {
         
         // 存储 token 和用户信息
         localStorage.setItem('token', token)
-        localStorage.setItem('user', JSON.stringify(user))
+        userStore.setUser(user)
         
         ElMessage.success('登录成功')
         router.push('/')
@@ -164,7 +166,7 @@ const handleGuestLogin = async () => {
     
     // 存储 token 和用户信息
     localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
+    userStore.setUser(user)
     
     ElMessage.success('游客登录成功')
     router.push('/')

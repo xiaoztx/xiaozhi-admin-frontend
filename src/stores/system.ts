@@ -15,6 +15,7 @@ export const useSystemStore = defineStore('system', () => {
   const enableInviteCode = ref(false)
   const minPasswordLength = ref(8)
   const passwordComplexity = ref<string[]>([])
+  const guestLimitMode = ref('mock')
 
   const loadSettings = async () => {
     try {
@@ -31,6 +32,7 @@ export const useSystemStore = defineStore('system', () => {
         allowRegister.value = data.allow_register === 'true' || data.allow_register === true
         enableInviteCode.value = data.enable_invite_code === 'true' || data.enable_invite_code === true
         minPasswordLength.value = parseInt(data.min_password_length) || 8
+        guestLimitMode.value = data.guest_limit_mode || 'mock'
         
         if (data.password_complexity) {
           if (typeof data.password_complexity === 'string') {
@@ -75,6 +77,7 @@ export const useSystemStore = defineStore('system', () => {
     enableInviteCode,
     minPasswordLength,
     passwordComplexity,
+    guestLimitMode,
     loadSettings
   }
 })

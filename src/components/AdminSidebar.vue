@@ -49,7 +49,7 @@
             </router-link>
           </li>
 
-          <li class="nav-item">
+          <li class="nav-item" v-if="isAdmin || isGuest">
             <router-link
               to="/users"
               class="nav-link"
@@ -218,7 +218,7 @@
       <div class="nav-section">
         <div v-if="!isCollapsed" class="section-title">系统工具</div>
         <ul class="nav-menu">
-          <li class="nav-item">
+          <li class="nav-item" v-if="isAdmin || isGuest">
             <router-link
               to="/settings"
               class="nav-link"
@@ -281,6 +281,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useSystemStore } from '@/stores/system'
+import { useUserStore } from '@/stores/user'
 import {
   House,
   User,
@@ -297,6 +298,7 @@ import {
 const route = useRoute()
 const themeStore = useThemeStore()
 const systemStore = useSystemStore()
+const userStore = useUserStore()
 
 const isCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
@@ -305,6 +307,8 @@ const isGithubExpanded = ref(false)
 
 const siteName = computed(() => systemStore.siteName)
 const logoUrl = computed(() => systemStore.logoUrl)
+const isAdmin = computed(() => ['super_admin', 'admin'].includes(userStore.userInfo.role))
+const isGuest = computed(() => userStore.userInfo.role === 'guest')
 
 // 监听路由变化，自动展开对应菜单
 watch(() => route.path, (newPath) => {
