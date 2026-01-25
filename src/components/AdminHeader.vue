@@ -18,19 +18,6 @@
       </el-icon>
     </button>
 
-    <!-- 面包屑导航 -->
-    <div class="breadcrumb">
-      <el-breadcrumb :separator-icon="ArrowRight">
-        <el-breadcrumb-item
-          v-for="(item, index) in breadcrumbItems"
-          :key="index"
-          :to="item.path"
-        >
-          {{ item.label }}
-        </el-breadcrumb-item>
-      </el-breadcrumb>
-    </div>
-
     <!-- 右侧操作区 -->
     <div class="header-actions">
       <!-- 主题切换 -->
@@ -95,7 +82,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -108,10 +95,8 @@ import {
   User,
   Setting,
   SwitchButton,
-  ArrowRight
 } from '@element-plus/icons-vue'
 
-const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -122,46 +107,6 @@ const userAvatar = computed(() => userStore.userInfo.avatar || 'https://cube.ele
 const isDark = computed(() => themeStore.isDark)
 const isSidebarCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobile = computed(() => window.innerWidth <= 768)
-
-const breadcrumbItems = computed(() => {
-  const path = route.path
-  const breadcrumbs = []
-
-  const routeMap: Record<string, string> = {
-    '/': '首页',
-    '/users': '用户管理',
-    '/cloud-config': '云配置管理',
-    '/dns': '域名管理',
-    '/oss': '对象存储管理',
-    '/github/monitor': '仓库监控',
-    '/github/account': '账户配置',
-    '/settings': '系统设置',
-    '/logs': '操作日志',
-    '/profile': '个人中心'
-  }
-
-  if (path === '/') {
-    breadcrumbs.push({ label: '仪表盘', path: '/' })
-  } else {
-    breadcrumbs.push({ label: '首页', path: '/' })
-    // 处理二级菜单面包屑
-    if (path.startsWith('/github')) {
-      breadcrumbs.push({ label: 'GitHub管理', path: '/github' })
-    }
-    
-    // 特殊路由处理
-    if (route.name === 'dns-records') {
-      breadcrumbs.push({ label: '域名管理', path: '/dns' })
-      breadcrumbs.push({ label: '解析记录', path })
-      return breadcrumbs
-    }
-
-    breadcrumbs.push({ label: routeMap[path] || '未知页面', path })
-  }
-
-  return breadcrumbs
-})
-
 
 const toggleTheme = () => {
   themeStore.toggleTheme()
@@ -256,7 +201,7 @@ const handleLogout = async () => {
     align-items: center;
     justify-content: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-right: 16px;
+    margin-right: auto; // 将右侧元素推到最右边
     overflow: hidden;
 
     &::before {

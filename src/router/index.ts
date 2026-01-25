@@ -22,58 +22,68 @@ const router = createRouter({
         {
           path: '',
           name: 'home',
-          component: () => import('@/views/Dashboard.vue')
+          component: () => import('@/views/Dashboard.vue'),
+          meta: { title: '仪表盘', affix: true }
         },
         {
           path: 'users',
           name: 'users',
-          component: () => import('@/views/UserManagement.vue')
+          component: () => import('@/views/UserManagement.vue'),
+          meta: { title: '用户管理' }
         },
         {
           path: 'cloud-config',
           name: 'cloud-config',
-          component: () => import('@/views/CloudConfig.vue')
+          component: () => import('@/views/CloudConfig.vue'),
+          meta: { title: '云配置管理' }
         },
         {
           path: 'dns',
           name: 'dns',
           component: () => import('@/views/DNSManagement.vue'),
-          meta: { title: '域名管理', requiresAuth: true }
+          meta: { title: '域名管理' }
         },
         {
           path: 'dns/:domain/records',
           name: 'dns-records',
-          component: () => import('@/views/DNSRecordManagement.vue')
+          component: () => import('@/views/DNSRecordManagement.vue'),
+          meta: { title: '解析记录' }
         },
         {
           path: 'oss',
           name: 'oss',
-          component: () => import('@/views/OSSManagement.vue')
+          component: () => import('@/views/OSSManagement.vue'),
+          meta: { title: '对象存储管理' }
         },
         {
           path: 'github/account',
           name: 'github-account',
-          component: () => import('@/views/github/GitHubAccount.vue')
+          component: () => import('@/views/github/GitHubAccount.vue'),
+          meta: { title: 'GitHub账户配置' }
         },
         {
           path: 'github/monitor',
           name: 'github-monitor',
-          component: () => import('@/views/github/GitHubMonitor.vue')
+          component: () => import('@/views/github/GitHubMonitor.vue'),
+          meta: { title: 'GitHub仓库监控' }
         },
         {
           path: 'profile',
           name: 'profile',
-          component: () => import('@/views/UserProfile.vue')
+          component: () => import('@/views/UserProfile.vue'),
+          meta: { title: '个人中心' }
         },
         {
           path: 'settings',
           name: 'settings',
-          component: () => import('@/views/SystemSettings.vue')
+          component: () => import('@/views/SystemSettings.vue'),
+          meta: { title: '系统设置' }
         },
         {
           path: 'logs',
           name: 'logs',
-          component: () => import('@/views/OperationLogs.vue')
+          component: () => import('@/views/OperationLogs.vue'),
+          meta: { title: '操作日志' }
         }
       ]
     }

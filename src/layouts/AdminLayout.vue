@@ -7,10 +7,19 @@
     <div class="main-content">
       <!-- 头部导航 -->
       <AdminHeader />
+      
+      <!-- 标签页导航 -->
+      <TagsView />
 
       <!-- 页面内容 -->
       <div class="content">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <transition name="fade-transform" mode="out-in">
+            <keep-alive :include="cachedViews">
+              <component :is="Component" />
+            </keep-alive>
+          </transition>
+        </router-view>
       </div>
     </div>
 
@@ -26,14 +35,18 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { useTagsViewStore } from '@/stores/tagsView'
 import AdminSidebar from '@/components/AdminSidebar.vue'
 import AdminHeader from '@/components/AdminHeader.vue'
+import TagsView from '@/components/TagsView.vue'
 
 const themeStore = useThemeStore()
+const tagsViewStore = useTagsViewStore()
 
 const themeClass = computed(() => themeStore.themeClass)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
 const isMobile = computed(() => window.innerWidth <= 768)
+const cachedViews = computed(() => tagsViewStore.cachedViews)
 
 const closeMobileMenu = () => {
   themeStore.closeMobileMenu()
