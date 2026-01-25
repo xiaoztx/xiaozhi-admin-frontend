@@ -18,6 +18,18 @@ const router = createRouter({
       component: () => import('@/views/auth/Register.vue')
     },
     {
+      path: '/terms',
+      name: 'terms',
+      component: () => import('@/views/legal/TermsOfService.vue'),
+      meta: { title: '服务条款' }
+    },
+    {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('@/views/legal/PrivacyPolicy.vue'),
+      meta: { title: '隐私政策' }
+    },
+    {
       path: '/',
       component: AdminLayout,
       meta: { requiresAuth: true },
