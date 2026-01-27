@@ -43,7 +43,7 @@ export const connectTest = (id: number) => {
   })
 }
 
-// 获取存储桶列表
+// 获取云配置下的存储桶列表
 export const getCloudBuckets = (id: number) => {
   return request({
     url: `/cloud-configs/${id}/buckets`,

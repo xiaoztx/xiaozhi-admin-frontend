@@ -89,7 +89,7 @@
       >
         <el-table-column type="selection" width="55" align="center" :selectable="checkSelectable" />
         
-        <el-table-column prop="id" label="用户ID" width="100" align="center" sortable />
+        <el-table-column prop="id" label="用户ID" width="180" align="center" sortable />
 
         <el-table-column label="用户名" min-width="180">
           <template #default="{ row }">

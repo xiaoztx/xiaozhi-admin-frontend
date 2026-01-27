@@ -1,40 +1,55 @@
 import request from '../utils/request'
 
-export const getRecords = (domain: string, params: any) => {
+export const getRecords = (domainId: string | number, params: any) => {
   return request({
-    url: `/dns/${domain}/records`,
+    url: '/dns-records',
     method: 'get',
-    params
+    params: {
+      ...params,
+      domain_id: domainId
+    }
   })
 }
 
-export const createRecord = (domain: string, data: any) => {
+export const createRecord = (domainId: string | number, data: any) => {
   return request({
-    url: `/dns/${domain}/records`,
+    url: '/dns-records',
     method: 'post',
-    data
+    data: {
+      ...data,
+      domain_id: typeof domainId === 'string' ? parseInt(domainId) : domainId
+    }
   })
 }
 
-export const updateRecord = (domain: string, recordId: string, data: any) => {
+export const updateRecord = (domainId: string | number, recordId: string | number, data: any) => {
   return request({
-    url: `/dns/${domain}/records/${recordId}`,
+    url: `/dns-records/${recordId}`,
     method: 'put',
-    data
+    data: {
+      ...data,
+      domain_id: typeof domainId === 'string' ? parseInt(domainId) : domainId
+    }
   })
 }
 
-export const deleteRecord = (domain: string, recordId: string) => {
+export const deleteRecord = (domainId: string | number, recordId: string | number) => {
   return request({
-    url: `/dns/${domain}/records/${recordId}`,
-    method: 'delete'
+    url: `/dns-records/${recordId}`,
+    method: 'delete',
+    params: {
+      domain_id: domainId
+    }
   })
 }
 
-export const setRecordStatus = (domain: string, recordId: string, status: string) => {
+export const setRecordStatus = (domainId: string | number, recordId: string | number, status: string) => {
   return request({
-    url: `/dns/${domain}/records/${recordId}/status`,
+    url: `/dns-records/${recordId}/status`,
     method: 'put',
-    data: { status }
+    data: { 
+      status,
+      domain_id: typeof domainId === 'string' ? parseInt(domainId) : domainId
+    }
   })
 }

@@ -157,6 +157,23 @@
             </div>
           </el-form-item>
 
+          <div class="flex gap-4">
+            <el-form-item label="样式分隔符" prop="config.styleSeparator" class="flex-1">
+              <el-input v-model="form.config.styleSeparator" placeholder="例如 ! 或 -" />
+              <div class="form-tip text-gray-400 text-xs mt-1">
+                腾讯云数据万象图片处理样式分隔符，通常为 ! 或 -。
+              </div>
+            </el-form-item>
+
+            <el-form-item label="默认访问样式" prop="config.visitStyle" class="flex-1">
+              <el-input v-model="form.config.visitStyle" placeholder="例如 web 或 original" />
+              <div class="form-tip text-gray-400 text-xs mt-1">
+                如果开启了原图保护，请在此填写允许访问的样式名称。<br>
+                <span class="text-danger">注意：如果遇到 "The image can not be accessed, please use style" 错误，说明您的存储桶开启了原图保护，必须在此配置样式，或者去腾讯云控制台关闭原图保护。</span>
+              </div>
+            </el-form-item>
+          </div>
+
           <el-form-item label="访问权限" prop="config.acl">
             <div class="acl-options">
               <div 
@@ -336,7 +353,9 @@ const form = reactive({
     cdnDomain: '',
     root: '',
     acl: 'public-read',
-    uploadType: 'direct'
+    uploadType: 'direct',
+    styleSeparator: '!',
+    visitStyle: ''
   } as Record<string, any>
 })
 
@@ -386,7 +405,9 @@ watch(() => props.visible, (val) => {
           cdnDomain: '',
           root: '',
           acl: 'public-read',
-          uploadType: 'direct'
+          uploadType: 'direct',
+          styleSeparator: '!',
+          visitStyle: ''
         }
       })
     }
@@ -435,6 +456,10 @@ const handleCredentialChange = async (val: number) => {
     form.config.secretId = config.accessKey || config.config?.accessKey || ''
     form.config.secretKey = config.secretKey || config.config?.secretKey || ''
     
+    // 填充其他默认值
+    form.config.styleSeparator = '!'
+    form.config.visitStyle = ''
+
     // 清空存储桶选择
     form.config.bucket = ''
     form.config.domain = ''
@@ -500,7 +525,7 @@ const handleSubmit = async () => {
   width: 6px;
 }
 .dialog-content::-webkit-scrollbar-thumb {
-  background-color: var(--border-medium);
+  background-color: #dcdfe6;
   border-radius: 3px;
 }
 .dialog-content::-webkit-scrollbar-track {
@@ -509,56 +534,53 @@ const handleSubmit = async () => {
 
 .form-tip {
   line-height: 1.5;
-  color: var(--text-tertiary);
+  color: #909399;
   font-size: 12px;
 }
-.text-warning { color: var(--color-warning); }
-.text-success { color: var(--color-success); }
-.text-danger { color: var(--color-danger); }
-.text-info { color: var(--color-primary); }
+.text-warning { color: #e6a23c; }
+.text-success { color: #67c23a; }
+.text-danger { color: #f56c6c; }
+.text-info { color: #409eff; }
 .mt-4 { margin-top: 1rem; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-4 { margin-bottom: 1rem; }
-.font-bold { font-weight: 700; color: var(--text-primary); }
+.font-bold { font-weight: 700; }
 
 .acl-item {
-  border: 1px solid var(--border-light);
+  border: 1px solid #dcdfe6;
   border-radius: 4px;
   padding: 12px;
   cursor: pointer;
   transition: all 0.3s;
-  background-color: var(--bg-primary);
 }
 .acl-item:hover {
-  border-color: var(--border-medium);
-  background-color: var(--bg-secondary);
+  border-color: #c0c4cc;
 }
 .acl-item.active {
-  border-color: var(--color-primary);
-  background-color: rgba(64, 158, 255, 0.1);
+  border-color: #409eff;
+  background-color: #ecf5ff;
 }
 .acl-desc {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #606266;
   margin-top: 4px;
   margin-left: 24px;
   line-height: 1.5;
 }
 .upload-type-box {
-  background-color: var(--bg-secondary);
+  background-color: #f5f7fa;
   padding: 10px 15px;
   border-radius: 4px;
   width: 100%;
-  color: var(--text-primary);
 }
 
 .list-disc { list-style-type: disc; }
 .pl-5 { padding-left: 1.25rem; }
-.bg-gray-50 { background-color: var(--bg-secondary); color: var(--text-primary); }
+.bg-gray-50 { background-color: #f9fafb; }
 .p-3 { padding: 0.75rem; }
 .rounded { border-radius: 0.25rem; }
 .border { border-width: 1px; }
-.border-gray-100 { border-color: var(--border-light); }
+.border-gray-100 { border-color: #f3f4f6; }
 .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
-.text-primary { color: var(--color-primary); }
+.text-primary { color: #409eff; }
 </style>

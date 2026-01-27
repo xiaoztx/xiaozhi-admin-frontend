@@ -203,7 +203,7 @@
       </div>
 
       <!-- 文件列表内容区 -->
-      <div class="fm-content-area" v-loading="loadingFiles">
+      <div class="fm-content-area" v-loading="loadingFiles" @click="closeContextMenu">
         <!-- 空状态 -->
         <div v-if="!selectedStrategyId" class="empty-state">
           <el-icon><Coin /></el-icon>
@@ -222,7 +222,8 @@
             :key="file.name" 
             class="file-grid-item"
             :class="{'is-selected': selectedFiles.includes(file)}"
-            @click="handleFileClick(file)"
+            @click.stop="handleFileClick(file)"
+            @contextmenu.prevent="handleContextMenu($event, file)"
           >
             <div class="file-icon-wrapper">
               <!-- 文件夹图标：使用更具质感的颜色和样式 -->
@@ -246,6 +247,7 @@
             style="width: 100%" 
             @selection-change="handleFileSelectionChange"
             :row-style="{ height: '50px' }"
+            @row-contextmenu="handleContextMenu"
           >
             <el-table-column type="selection" width="50" />
             <el-table-column label="文件名" min-width="300">
@@ -278,19 +280,86 @@
       :edit-data="currentEditItem"
       @submit="handleFormSubmit"
     />
+
+    <!-- 右键菜单 -->
+    <div 
+      v-show="contextMenuVisible" 
+      class="context-menu" 
+      :style="{ top: contextMenuPosition.y + 'px', left: contextMenuPosition.x + 'px' }"
+    >
+      <div class="menu-item" @click="handleRenameAction"><el-icon><Edit /></el-icon>重命名</div>
+      <div class="menu-item" @click="handleMoveAction"><el-icon><Rank /></el-icon>移动到</div>
+      <div class="menu-item" @click="handleDownloadAction"><el-icon><Download /></el-icon>下载</div>
+      <div class="menu-item" @click="handleGetLinkAction('download')"><el-icon><Link /></el-icon>获取长链 (下载)</div>
+      <div class="menu-item" @click="handleGetLinkAction('preview')"><el-icon><Link /></el-icon>获取短链 (预览)</div>
+      <div class="menu-item" @click="handleCopyAction"><el-icon><CopyDocument /></el-icon>复制</div>
+      <div class="menu-item" @click="handleDetailAction"><el-icon><InfoFilled /></el-icon>详细信息</div>
+      <div class="divider"></div>
+      <div class="menu-item delete" @click="handleDeleteFileAction"><el-icon><Delete /></el-icon>删除</div>
+    </div>
+
+    <!-- 链接显示弹窗 -->
+    <el-dialog v-model="linkDialogVisible" title="获取链接" width="600px" class="link-dialog">
+      <div class="link-list-container" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+        <div v-for="(item, index) in linkList" :key="index" class="link-item">
+          <el-input 
+            v-model="item.url" 
+            readonly 
+            size="default"
+          >
+            <template #append>
+              <el-button @click="handleCopyOne(item.url)">
+                <el-icon><CopyDocument /></el-icon> 复制
+              </el-button>
+            </template>
+          </el-input>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <div class="expire-info">
+            <el-icon><Timer /></el-icon>
+            <span>链接有效期: {{ linkExpireTime }}</span>
+          </div>
+          <div class="footer-btns">
+            <el-button @click="linkDialogVisible = false">关闭</el-button>
+            <el-button type="primary" @click="handleCopyAllLinks">复制全部</el-button>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 详细信息弹窗 -->
+    <el-dialog v-model="detailDialogVisible" title="详细信息" width="400px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="文件名">{{ fileDetail.name }}</el-descriptions-item>
+        <el-descriptions-item label="类型">{{ fileDetail.isDir ? '文件夹' : '文件' }}</el-descriptions-item>
+        <el-descriptions-item label="大小">{{ fileDetail.isDir ? '-' : formatSize(fileDetail.size) }}</el-descriptions-item>
+        <el-descriptions-item label="修改时间">{{ fileDetail.updateTime }}</el-descriptions-item>
+        <el-descriptions-item label="完整路径">{{ fileDetail.fullName }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { 
   Search, Plus, Refresh, Document, Coin, Check, Delete,
   FolderAdd, Upload, Folder, Box,
-  HomeFilled, Operation, Grid
+  HomeFilled, Operation, Grid,
+  Edit, Rank, Download, Link, CopyDocument, InfoFilled, Timer
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import StorageStrategyForm from './oss/StorageStrategyForm.vue'
-import { getStorageStrategies, deleteStorageStrategy, getStrategyFiles } from '@/api/storage-strategy'
+import { 
+  getStorageStrategies, deleteStorageStrategy, getStrategyFiles,
+  renameFile, copyFile, deleteFile, getFileLink, getFolderLinks
+} from '@/api/storage-strategy'
 
 // 类型定义
 interface StorageStrategy {
@@ -302,6 +371,8 @@ interface StorageStrategy {
   path?: string
   maxSize?: number
   defaultFor?: string
+  domain?: string
+  settings?: string
 }
 
 // 状态变量
@@ -328,9 +399,22 @@ interface FileItem {
   extension: string
   isDir: boolean
   updateTime: string
+  fullName: string
 }
 
 const fileList = ref<FileItem[]>([])
+
+// 上下文菜单状态
+const contextMenuVisible = ref(false)
+const contextMenuPosition = reactive({ x: 0, y: 0 })
+const contextMenuTarget = ref<FileItem | null>(null)
+
+// 弹窗状态
+const linkDialogVisible = ref(false)
+const linkList = ref<{url: string}[]>([])
+const linkExpireTime = ref('')
+const detailDialogVisible = ref(false)
+const fileDetail = ref<any>({})
 
 // 计算属性
 const filteredList = computed(() => {
@@ -369,6 +453,7 @@ const loadData = async () => {
 
 onMounted(() => {
   loadData()
+  window.addEventListener('click', closeContextMenu)
 })
 
 // 方法
@@ -479,7 +564,12 @@ const handleFileClick = (file: FileItem) => {
     currentPath.value = currentPath.value === '/' ? `/${file.name}` : `${currentPath.value}/${file.name}`
     refreshFiles()
   } else {
-    ElMessage.info(`选中文件：${file.name}`)
+    // 选中
+    if (selectedFiles.value.includes(file)) {
+      selectedFiles.value = selectedFiles.value.filter(f => f !== file)
+    } else {
+      selectedFiles.value.push(file)
+    }
   }
 }
 
@@ -541,6 +631,258 @@ const getFileIconClass = (ext: string) => {
   if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) return 'is-zip'
   return 'is-other'
 }
+
+// 右键菜单逻辑
+const handleContextMenu = (e: MouseEvent, file: FileItem) => {
+  // 阻止默认菜单
+  // e.preventDefault() // vue @contextmenu.prevent already does this
+  
+  contextMenuTarget.value = file
+  contextMenuPosition.x = e.clientX
+  contextMenuPosition.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+const closeContextMenu = () => {
+  contextMenuVisible.value = false
+}
+
+// 辅助方法：获取完整 Key
+const getFullKey = (fileName: string) => {
+  let prefix = ''
+  if (currentPath.value !== '/') {
+    prefix = currentPath.value.substring(1)
+    if (!prefix.endsWith('/')) prefix += '/'
+  }
+  return prefix + fileName
+}
+
+// 菜单动作处理
+const handleRenameAction = async () => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  
+  const file = contextMenuTarget.value
+
+  if (file.isDir) {
+    ElMessage.warning('虚拟目录不支持修改名称')
+    return
+  }
+
+  const oldKey = file.fullName
+  
+  try {
+    const { value: newName } = await ElMessageBox.prompt('请输入新名称', '重命名', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: file.name
+    })
+    
+    if (newName && newName !== file.name) {
+      // 构造新 Key (保持在当前目录)
+      const newKey = getFullKey(newName)
+      await renameFile(selectedStrategyId.value, { old_key: oldKey, new_key: newKey })
+      ElMessage.success('重命名成功')
+      refreshFiles()
+    }
+  } catch (e) {
+    if (e !== 'cancel') console.error(e)
+  }
+}
+
+const handleMoveAction = async () => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  
+  const file = contextMenuTarget.value
+  const oldKey = file.fullName
+  
+  try {
+    // 简单实现：输入目标完整路径
+    const { value: newPath } = await ElMessageBox.prompt('请输入目标路径 (包含文件名)', '移动到', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: oldKey
+    })
+    
+    if (newPath && newPath !== oldKey) {
+      await renameFile(selectedStrategyId.value, { old_key: oldKey, new_key: newPath })
+      ElMessage.success('移动成功')
+      refreshFiles()
+    }
+  } catch (e) {
+    if (e !== 'cancel') console.error(e)
+  }
+}
+
+const handleCopyAction = async () => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  
+  const file = contextMenuTarget.value
+  const oldKey = file.fullName
+  
+  try {
+    const { value: newPath } = await ElMessageBox.prompt('请输入目标路径 (包含文件名)', '复制到', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: oldKey + '_copy'
+    })
+    
+    if (newPath && newPath !== oldKey) {
+      await copyFile(selectedStrategyId.value, { source_key: oldKey, dest_key: newPath })
+      ElMessage.success('复制成功')
+      refreshFiles()
+    }
+  } catch (e) {
+    if (e !== 'cancel') console.error(e)
+  }
+}
+
+const handleDownloadAction = async () => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  const file = contextMenuTarget.value
+  
+  if (file.isDir) {
+    ElMessage.warning('不支持下载文件夹')
+    return
+  }
+
+  try {
+    const res: any = await getFileLink(selectedStrategyId.value, file.fullName, 'download')
+    if (res.link) {
+      window.open(res.link, '_blank')
+    }
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('获取下载链接失败')
+  }
+}
+
+const handleGetLinkAction = async (type: 'preview' | 'download') => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  const file = contextMenuTarget.value
+  
+  linkList.value = []
+  linkDialogVisible.value = true
+  
+  // 提示用户有效期
+  linkExpireTime.value = type === 'download' ? '10分钟' : '5分钟'
+  const linkDesc = type === 'download' ? '下载链接 (长链)' : '预览链接 (短链)'
+  
+  // 辅助函数：处理 URL 域名
+  const formatUrl = (url: string) => {
+    // 如果是短链 (以 / 开头)
+    if (url.startsWith('/')) {
+      // 查找当前策略
+      const strategy = strategyList.value.find(s => s.id === selectedStrategyId.value)
+      
+      if (strategy) {
+        // 1. 优先尝试使用 CDN 域名
+        try {
+          if (strategy.settings) {
+            const settings = typeof strategy.settings === 'string' 
+              ? JSON.parse(strategy.settings) 
+              : strategy.settings
+            
+            if (settings.cdn_domain) {
+              let cdn = settings.cdn_domain
+              if (!cdn.startsWith('http')) {
+                 cdn = 'http://' + cdn // 简单的协议补全，实际可能需要更严谨判断
+              }
+              return cdn.replace(/\/$/, '') + url
+            }
+          }
+        } catch (e) {
+          console.warn('解析策略配置失败', e)
+        }
+
+        // 2. 其次使用访问域名 (domain)
+        if (strategy.domain) {
+           let domain = strategy.domain
+           if (!domain.startsWith('http')) {
+              domain = 'http://' + domain
+           }
+           return domain.replace(/\/$/, '') + url
+        }
+      }
+
+      // 3. 最后使用当前 Origin
+      return window.location.origin + url
+    }
+    // 如果是长链，后端已经根据配置处理了域名，直接显示
+    return url
+  }
+
+  try {
+    if (file.isDir) {
+      // 确保路径以 / 结尾，但不重复添加
+      const prefix = file.fullName.endsWith('/') ? file.fullName : file.fullName + '/'
+      const res: any = await getFolderLinks(selectedStrategyId.value, prefix, type)
+      if (res.links && res.links.length > 0) {
+        linkList.value = res.links.map((u: string) => ({ url: formatUrl(u) }))
+        ElMessage.success(`已获取 ${linkDesc}`)
+      } else {
+        linkList.value = []
+        ElMessage.warning('文件夹为空或无文件')
+      }
+    } else {
+      const res: any = await getFileLink(selectedStrategyId.value, file.fullName, type)
+      linkList.value = [{ url: formatUrl(res.link) }]
+      ElMessage.success(`已获取 ${linkDesc}`)
+    }
+  } catch (e: any) {
+    console.error('获取链接错误:', e)
+    const errorMsg = e?.response?.data?.error || e?.message || '未知错误'
+    ElMessage.error('获取链接失败: ' + errorMsg)
+    // 如果失败，可以关闭弹窗或者显示错误状态
+  }
+}
+
+const handleCopyOne = (url: string) => {
+  if (!url) return
+  navigator.clipboard.writeText(url).then(() => {
+    ElMessage.success('复制成功')
+  })
+}
+
+const handleCopyAllLinks = () => {
+  if (linkList.value.length === 0) return
+  const text = linkList.value.map(item => item.url).join('\n')
+  navigator.clipboard.writeText(text).then(() => {
+    ElMessage.success('已复制全部链接')
+  })
+}
+
+const handleDetailAction = () => {
+  if (!contextMenuTarget.value) return
+  fileDetail.value = contextMenuTarget.value
+  detailDialogVisible.value = true
+}
+
+const handleDeleteFileAction = async () => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  const file = contextMenuTarget.value
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除 ${file.isDir ? '文件夹' : '文件'} "${file.name}" 吗？`,
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    await deleteFile(selectedStrategyId.value, { key: file.fullName })
+    ElMessage.success('删除成功')
+    refreshFiles()
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error(e)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -861,6 +1203,10 @@ const getFileIconClass = (ext: string) => {
             box-shadow: 0 0 0 1px var(--color-primary) inset;
           }
         }
+
+        :deep(.el-input__inner) {
+          background-color: transparent;
+        }
       }
     }
 
@@ -987,6 +1333,83 @@ const getFileIconClass = (ext: string) => {
         font-size: 12px;
       }
     }
+  }
+}
+
+// 右键菜单样式
+.context-menu {
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  padding: 6px 0;
+  z-index: 2000;
+  min-width: 140px;
+  border: 1px solid var(--border-light);
+
+  .menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--bg-secondary);
+      color: var(--color-primary);
+    }
+
+    &.delete {
+      color: var(--color-danger);
+      &:hover {
+        background-color: rgba(245, 108, 108, 0.1);
+      }
+    }
+  }
+
+  .divider {
+    height: 1px;
+    background-color: var(--border-light);
+    margin: 4px 0;
+  }
+}
+
+.link-list-container {
+  .link-item {
+    margin-bottom: 16px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .expire-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #fdf6ec;
+    color: #e6a23c;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    border: 1px solid #faecd8;
+
+    .el-icon {
+      font-size: 16px;
+    }
+  }
+
+  .footer-btns {
+    display: flex;
+    gap: 12px;
   }
 }
 </style>

@@ -43,3 +43,48 @@ export const getStrategyFiles = (id: number, params: any) => {
     params
   })
 }
+
+// 重命名文件
+export const renameFile = (id: number, data: any) => {
+  return request({
+    url: `/storage-strategies/${id}/files/rename`,
+    method: 'post',
+    data
+  })
+}
+
+// 复制文件
+export const copyFile = (id: number, data: any) => {
+  return request({
+    url: `/storage-strategies/${id}/files/copy`,
+    method: 'post',
+    data
+  })
+}
+
+// 删除文件
+export const deleteFile = (id: number, data: any) => {
+  return request({
+    url: `/storage-strategies/${id}/files/delete`,
+    method: 'post',
+    data
+  })
+}
+
+// 获取文件链接
+export const getFileLink = (id: number, key: string, type: 'preview' | 'download' = 'preview') => {
+  return request({
+    url: `/storage-strategies/${id}/files/link`,
+    method: 'get',
+    params: { key, type }
+  })
+}
+
+// 获取文件夹链接
+export const getFolderLinks = (id: number, prefix: string, type: 'preview' | 'download' = 'preview') => {
+  return request({
+    url: `/storage-strategies/${id}/files/links`,
+    method: 'get',
+    params: { prefix, type }
+  })
+}
