@@ -264,7 +264,11 @@
                  {{ row.isDir ? '-' : formatSize(row.size) }}
                </template>
             </el-table-column>
-            <el-table-column prop="updateTime" label="修改时间" width="180" />
+            <el-table-column prop="updateTime" label="修改时间" width="180">
+              <template #default="{ row }">
+                {{ formatDate(row.updateTime) }}
+              </template>
+            </el-table-column>
           </el-table>
         </div>
         
@@ -290,9 +294,8 @@
       <div class="menu-item" @click="handleRenameAction"><el-icon><Edit /></el-icon>重命名</div>
       <div class="menu-item" @click="handleMoveAction"><el-icon><Rank /></el-icon>移动到</div>
       <div class="menu-item" @click="handleDownloadAction"><el-icon><Download /></el-icon>下载</div>
-      <div class="menu-item" @click="handleGetLinkAction('download')"><el-icon><Link /></el-icon>获取长链 (下载)</div>
-      <div class="menu-item" @click="handleGetLinkAction('preview')"><el-icon><Link /></el-icon>获取短链 (预览)</div>
-      <div class="menu-item" @click="handleCopyAction"><el-icon><CopyDocument /></el-icon>复制</div>
+      <div class="menu-item" @click="handleCopyLinkAction"><el-icon><CopyDocument /></el-icon>复制链接</div>
+      <div class="menu-item" @click="handleCopyAction"><el-icon><CopyDocument /></el-icon>复制文件到...</div>
       <div class="menu-item" @click="handleDetailAction"><el-icon><InfoFilled /></el-icon>详细信息</div>
       <div class="divider"></div>
       <div class="menu-item delete" @click="handleDeleteFileAction"><el-icon><Delete /></el-icon>删除</div>
@@ -352,10 +355,12 @@ import {
   Search, Plus, Refresh, Document, Coin, Check, Delete,
   FolderAdd, Upload, Folder, Box,
   HomeFilled, Operation, Grid,
-  Edit, Rank, Download, Link, CopyDocument, InfoFilled, Timer
-} from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+  Edit, Rank, Download, CopyDocument, InfoFilled, Timer
+}
+from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import StorageStrategyForm from './oss/StorageStrategyForm.vue'
+import JSZip from 'jszip'
 import { 
   getStorageStrategies, deleteStorageStrategy, getStrategyFiles,
   renameFile, copyFile, deleteFile, getFileLink, getFolderLinks
@@ -622,6 +627,14 @@ const formatSize = (bytes: number) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  const pad = (n: number) => n < 10 ? `0${n}` : n
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
 const getFileIconClass = (ext: string) => {
   const extension = ext ? ext.toLowerCase() : ''
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(extension)) return 'is-image'
@@ -741,14 +754,142 @@ const handleDownloadAction = async () => {
   const file = contextMenuTarget.value
   
   if (file.isDir) {
-    ElMessage.warning('不支持下载文件夹')
+    const loading = ElLoading.service({
+      lock: true,
+      text: '正在打包下载中...',
+      background: 'rgba(0, 0, 0, 0.7)',
+    })
+
+    try {
+      // 1. 获取所有文件的下载链接
+      const prefix = file.fullName.endsWith('/') ? file.fullName : file.fullName + '/'
+      const res: any = await getFolderLinks(selectedStrategyId.value, prefix, 'download')
+      
+      if (!res.links || res.links.length === 0) {
+        ElMessage.warning('文件夹为空或无文件')
+        loading.close()
+        return
+      }
+
+      const zip = new JSZip()
+      const folderName = file.name
+
+      // 2. 并发下载所有文件并添加到 ZIP
+      const downloadPromises = res.links.map(async (url: string) => {
+        try {
+          // 尝试从 URL 中解析文件名
+          const cleanUrl = url.split('?')[0] || url
+          let fileName = decodeURIComponent(cleanUrl.split('/').pop() || 'unknown')
+          
+          // 简单的去重处理 (如果在同一个 zip 根目录下有同名文件)
+          if (zip.file(fileName)) {
+            const ext = fileName.includes('.') ? `.${fileName.split('.').pop()}` : ''
+            const name = fileName.replace(ext, '')
+            fileName = `${name}_${Date.now().toString().slice(-4)}${ext}`
+          }
+
+          const response = await fetch(url)
+          if (!response.ok) throw new Error('Network response was not ok')
+          const blob = await response.blob()
+          zip.file(fileName, blob)
+        } catch (err) {
+          console.error(`下载文件失败: ${url}`, err)
+        }
+      })
+
+      await Promise.all(downloadPromises)
+
+      // 3. 生成 ZIP 并触发下载
+      const content = await zip.generateAsync({ type: 'blob' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(content)
+      link.download = `${folderName}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+      
+      ElMessage.success('打包下载成功')
+    } catch (e) {
+      console.error(e)
+      ElMessage.error('打包下载失败，请检查网络或跨域配置')
+    } finally {
+      loading.close()
+    }
     return
   }
 
+  // 单文件下载
   try {
     const res: any = await getFileLink(selectedStrategyId.value, file.fullName, 'download')
     if (res.link) {
-      window.open(res.link, '_blank')
+      // 使用 fetch + blob 强制使用正确的文件名（解决跨域或 URL 无后缀问题）
+      const loading = ElLoading.service({
+        lock: true,
+        text: '正在准备下载...',
+        background: 'rgba(0, 0, 0, 0.7)',
+      })
+      
+      try {
+        const response = await fetch(res.link)
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        
+        // 检查 Content-Type，防止下载到错误页面 (XML/HTML)
+        const contentType = response.headers.get('content-type')
+        if (contentType && (contentType.includes('application/xml') || contentType.includes('text/html'))) {
+           const text = await response.text()
+           console.error('下载失败，服务端返回错误:', text)
+           
+           // 检查是否是劫持页面
+           if (text.includes('url.bn26.cn') || text.includes('referrer')) {
+              throw new Error('下载链接被运营商劫持，请检查域名 HTTPS 配置')
+           }
+
+           // 尝试解析 XML 错误信息
+           let errorMsg = '文件无法访问'
+           if (text.includes('<Message>')) {
+             const match = text.match(/<Message>(.*?)<\/Message>/)
+             if (match && match[1]) errorMsg = match[1]
+           }
+           throw new Error(errorMsg)
+        }
+
+        const blob = await response.blob()
+        
+        // 智能处理文件名：如果文件名不包含后缀且存在后缀信息，则自动补全
+        let downloadName = file.name
+        const ext = file.extension ? file.extension.toLowerCase() : ''
+        if (ext && !downloadName.toLowerCase().endsWith('.' + ext)) {
+          downloadName = `${downloadName}.${ext}`
+        }
+
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = downloadName || file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+        ElMessage.success('开始下载')
+      } catch (err) {
+        console.error('下载文件流失败，尝试直接打开链接', err)
+        // 降级处理
+        let downloadName = file.name
+        const ext = file.extension ? file.extension.toLowerCase() : ''
+        if (ext && !downloadName.toLowerCase().endsWith('.' + ext)) {
+          downloadName = `${downloadName}.${ext}`
+        }
+
+        const link = document.createElement('a')
+        link.href = res.link
+        link.setAttribute('download', downloadName || file.name)
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } finally {
+        loading.close()
+      }
     }
   } catch (e) {
     console.error(e)
@@ -756,16 +897,9 @@ const handleDownloadAction = async () => {
   }
 }
 
-const handleGetLinkAction = async (type: 'preview' | 'download') => {
+const handleCopyLinkAction = async () => {
   if (!contextMenuTarget.value || !selectedStrategyId.value) return
   const file = contextMenuTarget.value
-  
-  linkList.value = []
-  linkDialogVisible.value = true
-  
-  // 提示用户有效期
-  linkExpireTime.value = type === 'download' ? '10分钟' : '5分钟'
-  const linkDesc = type === 'download' ? '下载链接 (长链)' : '预览链接 (短链)'
   
   // 辅助函数：处理 URL 域名
   const formatUrl = (url: string) => {
@@ -785,7 +919,7 @@ const handleGetLinkAction = async (type: 'preview' | 'download') => {
             if (settings.cdn_domain) {
               let cdn = settings.cdn_domain
               if (!cdn.startsWith('http')) {
-                 cdn = 'http://' + cdn // 简单的协议补全，实际可能需要更严谨判断
+                 cdn = 'http://' + cdn
               }
               return cdn.replace(/\/$/, '') + url
             }
@@ -812,27 +946,32 @@ const handleGetLinkAction = async (type: 'preview' | 'download') => {
   }
 
   try {
+    let urlToCopy = ''
     if (file.isDir) {
-      // 确保路径以 / 结尾，但不重复添加
-      const prefix = file.fullName.endsWith('/') ? file.fullName : file.fullName + '/'
-      const res: any = await getFolderLinks(selectedStrategyId.value, prefix, type)
-      if (res.links && res.links.length > 0) {
-        linkList.value = res.links.map((u: string) => ({ url: formatUrl(u) }))
-        ElMessage.success(`已获取 ${linkDesc}`)
-      } else {
-        linkList.value = []
-        ElMessage.warning('文件夹为空或无文件')
-      }
+      // 文件夹暂不支持直接复制链接，或者提示
+      ElMessage.info('文件夹暂不支持复制链接')
+      return
     } else {
-      const res: any = await getFileLink(selectedStrategyId.value, file.fullName, type)
-      linkList.value = [{ url: formatUrl(res.link) }]
-      ElMessage.success(`已获取 ${linkDesc}`)
+      // 使用 preview 类型获取链接 (现在后端已经去掉了短链逻辑，会直接返回直链)
+      const res: any = await getFileLink(selectedStrategyId.value, file.fullName, 'preview')
+      urlToCopy = formatUrl(res.link)
+    }
+
+    if (urlToCopy) {
+      navigator.clipboard.writeText(urlToCopy).then(() => {
+        ElMessage.success('链接已复制到剪贴板')
+      }).catch(err => {
+        console.error('复制失败', err)
+        ElMessage.error('复制失败，请手动复制')
+        // 如果自动复制失败，可以降级显示弹窗让用户手动复制
+        linkList.value = [{ url: urlToCopy }]
+        linkDialogVisible.value = true
+        linkExpireTime.value = '永久/以配置为准'
+      })
     }
   } catch (e: any) {
     console.error('获取链接错误:', e)
-    const errorMsg = e?.response?.data?.error || e?.message || '未知错误'
-    ElMessage.error('获取链接失败: ' + errorMsg)
-    // 如果失败，可以关闭弹窗或者显示错误状态
+    ElMessage.error('获取链接失败')
   }
 }
 
