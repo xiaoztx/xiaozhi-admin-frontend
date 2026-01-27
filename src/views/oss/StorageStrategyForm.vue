@@ -500,7 +500,7 @@ const handleSubmit = async () => {
   width: 6px;
 }
 .dialog-content::-webkit-scrollbar-thumb {
-  background-color: #dcdfe6;
+  background-color: var(--border-medium);
   border-radius: 3px;
 }
 .dialog-content::-webkit-scrollbar-track {
@@ -509,53 +509,56 @@ const handleSubmit = async () => {
 
 .form-tip {
   line-height: 1.5;
-  color: #909399;
+  color: var(--text-tertiary);
   font-size: 12px;
 }
-.text-warning { color: #e6a23c; }
-.text-success { color: #67c23a; }
-.text-danger { color: #f56c6c; }
-.text-info { color: #409eff; }
+.text-warning { color: var(--color-warning); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-info { color: var(--color-primary); }
 .mt-4 { margin-top: 1rem; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-4 { margin-bottom: 1rem; }
-.font-bold { font-weight: 700; }
+.font-bold { font-weight: 700; color: var(--text-primary); }
 
 .acl-item {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   padding: 12px;
   cursor: pointer;
   transition: all 0.3s;
+  background-color: var(--bg-primary);
 }
 .acl-item:hover {
-  border-color: #c0c4cc;
+  border-color: var(--border-medium);
+  background-color: var(--bg-secondary);
 }
 .acl-item.active {
-  border-color: #409eff;
-  background-color: #ecf5ff;
+  border-color: var(--color-primary);
+  background-color: rgba(64, 158, 255, 0.1);
 }
 .acl-desc {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary);
   margin-top: 4px;
   margin-left: 24px;
   line-height: 1.5;
 }
 .upload-type-box {
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary);
   padding: 10px 15px;
   border-radius: 4px;
   width: 100%;
+  color: var(--text-primary);
 }
 
 .list-disc { list-style-type: disc; }
 .pl-5 { padding-left: 1.25rem; }
-.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-50 { background-color: var(--bg-secondary); color: var(--text-primary); }
 .p-3 { padding: 0.75rem; }
 .rounded { border-radius: 0.25rem; }
 .border { border-width: 1px; }
-.border-gray-100 { border-color: #f3f4f6; }
+.border-gray-100 { border-color: var(--border-light); }
 .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
-.text-primary { color: #409eff; }
+.text-primary { color: var(--color-primary); }
 </style>

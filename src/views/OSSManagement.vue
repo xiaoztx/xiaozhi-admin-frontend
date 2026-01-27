@@ -19,6 +19,14 @@
 
           <el-button 
             v-if="isSelectMode" 
+            plain 
+            @click="handleSelectAll"
+          >
+            {{ isAllSelected ? '取消全选' : '全选' }}
+          </el-button>
+
+          <el-button 
+            v-if="isSelectMode" 
             type="danger" 
             plain 
             :disabled="selectedIds.length === 0"
@@ -334,6 +342,10 @@ const filteredList = computed(() => {
   )
 })
 
+const isAllSelected = computed(() => {
+  return filteredList.value.length > 0 && selectedIds.value.length === filteredList.value.length
+})
+
 const pathParts = computed(() => {
   return currentPath.value.split('/').filter(p => p)
 })
@@ -391,6 +403,14 @@ const handleSelectionChange = (id: number, checked: boolean) => {
     if (index > -1) {
       selectedIds.value.splice(index, 1)
     }
+  }
+}
+
+const handleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedIds.value = []
+  } else {
+    selectedIds.value = filteredList.value.map(item => item.id)
   }
 }
 
@@ -837,7 +857,7 @@ const getFileIconClass = (ext: string) => {
           padding-left: 12px;
           
           &.is-focus {
-            background-color: #fff;
+            background-color: var(--bg-primary);
             box-shadow: 0 0 0 1px var(--color-primary) inset;
           }
         }
@@ -845,7 +865,7 @@ const getFileIconClass = (ext: string) => {
     }
 
     .fm-content-area {
-      background: white;
+      background: var(--bg-primary);
       border-radius: 12px;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       border: 1px solid var(--border-light);
