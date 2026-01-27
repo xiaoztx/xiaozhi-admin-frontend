@@ -291,11 +291,12 @@
       class="context-menu" 
       :style="{ top: contextMenuPosition.y + 'px', left: contextMenuPosition.x + 'px' }"
     >
-      <div class="menu-item" @click="handleRenameAction"><el-icon><Edit /></el-icon>重命名</div>
-      <div class="menu-item" @click="handleMoveAction"><el-icon><Rank /></el-icon>移动到</div>
+      <div class="menu-item" v-if="contextMenuTarget && !contextMenuTarget.isDir" @click="handleRenameAction"><el-icon><Edit /></el-icon>重命名</div>
+      <div class="menu-item" v-if="contextMenuTarget && !contextMenuTarget.isDir" @click="handleMoveAction"><el-icon><Rank /></el-icon>移动到</div>
       <div class="menu-item" @click="handleDownloadAction"><el-icon><Download /></el-icon>下载</div>
-      <div class="menu-item" @click="handleCopyLinkAction"><el-icon><CopyDocument /></el-icon>复制链接</div>
-      <div class="menu-item" @click="handleCopyAction"><el-icon><CopyDocument /></el-icon>复制文件到...</div>
+      <div class="menu-item" v-if="contextMenuTarget && !contextMenuTarget.isDir" @click="handleCopyLinkAction"><el-icon><CopyDocument /></el-icon>复制链接</div>
+      <div class="menu-item" v-if="contextMenuTarget && contextMenuTarget.isDir" @click="handleGetFolderLinksAction"><el-icon><CopyDocument /></el-icon>获取链接</div>
+      <div class="menu-item" v-if="contextMenuTarget && !contextMenuTarget.isDir" @click="handleCopyAction"><el-icon><CopyDocument /></el-icon>复制文件到...</div>
       <div class="menu-item" @click="handleDetailAction"><el-icon><InfoFilled /></el-icon>详细信息</div>
       <div class="divider"></div>
       <div class="menu-item delete" @click="handleDeleteFileAction"><el-icon><Delete /></el-icon>删除</div>
@@ -338,7 +339,7 @@
         <el-descriptions-item label="文件名">{{ fileDetail.name }}</el-descriptions-item>
         <el-descriptions-item label="类型">{{ fileDetail.isDir ? '文件夹' : '文件' }}</el-descriptions-item>
         <el-descriptions-item label="大小">{{ fileDetail.isDir ? '-' : formatSize(fileDetail.size) }}</el-descriptions-item>
-        <el-descriptions-item label="修改时间">{{ fileDetail.updateTime }}</el-descriptions-item>
+        <el-descriptions-item label="修改时间">{{ formatDate(fileDetail.updateTime) }}</el-descriptions-item>
         <el-descriptions-item label="完整路径">{{ fileDetail.fullName }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -706,6 +707,12 @@ const handleMoveAction = async () => {
   if (!contextMenuTarget.value || !selectedStrategyId.value) return
   
   const file = contextMenuTarget.value
+
+  if (file.isDir) {
+    ElMessage.warning('虚拟目录不支持移动')
+    return
+  }
+
   const oldKey = file.fullName
   
   try {
@@ -959,19 +966,79 @@ const handleCopyLinkAction = async () => {
 
     if (urlToCopy) {
       navigator.clipboard.writeText(urlToCopy).then(() => {
-        ElMessage.success('链接已复制到剪贴板')
+        // 简单判断链接是否有签名参数
+        const isSigned = urlToCopy.includes('sign=') || 
+                         urlToCopy.includes('Signature=') || 
+                         urlToCopy.includes('X-Amz-Signature=') ||
+                         urlToCopy.includes('q-signature=')
+        
+        const tip = isSigned ? ' (有效期5分钟)' : ' (永久有效)'
+        ElMessage.success('链接已复制到剪贴板' + tip)
       }).catch(err => {
         console.error('复制失败', err)
         ElMessage.error('复制失败，请手动复制')
         // 如果自动复制失败，可以降级显示弹窗让用户手动复制
         linkList.value = [{ url: urlToCopy }]
         linkDialogVisible.value = true
-        linkExpireTime.value = '永久/以配置为准'
+        
+        // 简单判断链接是否有签名参数
+        const isSigned = urlToCopy.includes('sign=') || 
+                         urlToCopy.includes('Signature=') || 
+                         urlToCopy.includes('X-Amz-Signature=') ||
+                         urlToCopy.includes('q-signature=')
+        linkExpireTime.value = isSigned ? '5分钟' : '永久'
       })
     }
   } catch (e: any) {
     console.error('获取链接错误:', e)
     ElMessage.error('获取链接失败')
+  }
+}
+
+const handleGetFolderLinksAction = async () => {
+  if (!contextMenuTarget.value || !selectedStrategyId.value) return
+  const file = contextMenuTarget.value
+  
+  if (!file.isDir) return
+
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在获取链接...',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+
+  try {
+    // 确保 prefix 以 / 结尾
+    const prefix = file.fullName.endsWith('/') ? file.fullName : file.fullName + '/'
+    const res: any = await getFolderLinks(selectedStrategyId.value, prefix, 'preview')
+    
+    if (!res.links || res.links.length === 0) {
+      ElMessage.warning('文件夹为空或无文件')
+      loading.close()
+      return
+    }
+
+    linkList.value = res.links.map((url: string) => ({ url }))
+    linkDialogVisible.value = true
+    
+    // 检查有效期
+    if (linkList.value.length > 0 && linkList.value[0]) {
+      const firstUrl = linkList.value[0].url
+      // 简单判断链接是否有签名参数
+      const isSigned = firstUrl.includes('sign=') || 
+                       firstUrl.includes('Signature=') || 
+                       firstUrl.includes('X-Amz-Signature=') ||
+                       firstUrl.includes('q-signature=')
+      linkExpireTime.value = isSigned ? '5分钟' : '永久'
+    } else {
+      linkExpireTime.value = '未知'
+    }
+
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('获取链接失败')
+  } finally {
+    loading.close()
   }
 }
 
