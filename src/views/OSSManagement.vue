@@ -769,90 +769,83 @@ const getFullKey = (fileName: string) => {
   return prefix + fileName
 }
 
-// 菜单动作处理
-const handleRenameAction = async () => {
-  if (!contextMenuTarget.value || !selectedStrategyId.value) return
-  
-  const file = contextMenuTarget.value
+  // 菜单动作处理
+  const handleFileAction = async (
+    title: string,
+    promptMsg: string,
+    defaultInput: string,
+    actionFunc: (params: any) => Promise<any>
+  ) => {
+    if (!contextMenuTarget.value || !selectedStrategyId.value) return
+    const file = contextMenuTarget.value
 
-  if (file.isDir) {
-    ElMessage.warning('虚拟目录不支持修改名称')
-    return
-  }
-
-  const oldKey = file.fullName
-  
-  try {
-    const { value: newName } = await ElMessageBox.prompt('请输入新名称', '重命名', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputValue: file.name
-    })
-    
-    if (newName && newName !== file.name) {
-      // 构造新 Key (保持在当前目录)
-      const newKey = getFullKey(newName)
-      await renameFile(selectedStrategyId.value, { old_key: oldKey, new_key: newKey })
-      ElMessage.success('重命名成功')
-      refreshFiles()
+    if (file.isDir && title !== '移动到') { // 移动操作暂时也限制目录，视后端实现而定
+      ElMessage.warning('虚拟目录不支持此操作')
+      return
     }
-  } catch (e) {
-    if (e !== 'cancel') console.error(e)
-  }
-}
-
-const handleMoveAction = async () => {
-  if (!contextMenuTarget.value || !selectedStrategyId.value) return
-  
-  const file = contextMenuTarget.value
-
-  if (file.isDir) {
-    ElMessage.warning('虚拟目录不支持移动')
-    return
-  }
-
-  const oldKey = file.fullName
-  
-  try {
-    // 简单实现：输入目标完整路径
-    const { value: newPath } = await ElMessageBox.prompt('请输入目标路径 (包含文件名)', '移动到', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputValue: oldKey
-    })
-    
-    if (newPath && newPath !== oldKey) {
-      await renameFile(selectedStrategyId.value, { old_key: oldKey, new_key: newPath })
-      ElMessage.success('移动成功')
-      refreshFiles()
+    // 特殊处理移动/重命名目录的情况 (假设后端不支持)
+    if (file.isDir && (title === '重命名' || title === '移动到')) {
+         ElMessage.warning('虚拟目录不支持修改名称或移动')
+         return
     }
-  } catch (e) {
-    if (e !== 'cancel') console.error(e)
-  }
-}
 
-const handleCopyAction = async () => {
-  if (!contextMenuTarget.value || !selectedStrategyId.value) return
-  
-  const file = contextMenuTarget.value
-  const oldKey = file.fullName
-  
-  try {
-    const { value: newPath } = await ElMessageBox.prompt('请输入目标路径 (包含文件名)', '复制到', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputValue: oldKey + '_copy'
-    })
-    
-    if (newPath && newPath !== oldKey) {
-      await copyFile(selectedStrategyId.value, { source_key: oldKey, dest_key: newPath })
-      ElMessage.success('复制成功')
-      refreshFiles()
+    try {
+        const { value: newValue } = await ElMessageBox.prompt(promptMsg, title, {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            inputValue: defaultInput
+        })
+
+         if (newValue && newValue !== defaultInput) {
+            // 根据操作类型构造参数
+            // 这里需要根据不同的 API 调整参数构造，或者统一 API 参数风格
+            // 目前: rename({old_key, new_key}), copy({source_key, dest_key})
+            // 为了通用，我们在调用时传入封装好的闭包
+            await actionFunc(newValue)
+            ElMessage.success(`${title}成功`)
+            refreshFiles()
+        }
+    } catch (e) {
+        if (e !== 'cancel') console.error(e)
     }
-  } catch (e) {
-    if (e !== 'cancel') console.error(e)
   }
-}
+
+  const handleRenameAction = () => {
+      if (!contextMenuTarget.value) return
+      handleFileAction(
+          '重命名',
+          '请输入新名称',
+          contextMenuTarget.value.name,
+          async (newName) => {
+              const newKey = getFullKey(newName)
+              await renameFile(selectedStrategyId.value!, { old_key: contextMenuTarget.value!.fullName, new_key: newKey })
+          }
+      )
+  }
+
+  const handleMoveAction = () => {
+      if (!contextMenuTarget.value) return
+      handleFileAction(
+          '移动到',
+          '请输入目标路径 (包含文件名)',
+          contextMenuTarget.value.fullName,
+          async (newPath) => {
+               await renameFile(selectedStrategyId.value!, { old_key: contextMenuTarget.value!.fullName, new_key: newPath })
+          }
+      )
+  }
+
+  const handleCopyAction = () => {
+      if (!contextMenuTarget.value) return
+      handleFileAction(
+          '复制到',
+          '请输入目标路径 (包含文件名)',
+          contextMenuTarget.value.fullName + '_copy',
+          async (newPath) => {
+              await copyFile(selectedStrategyId.value!, { source_key: contextMenuTarget.value!.fullName, dest_key: newPath })
+          }
+      )
+  }
 
 const handleDownloadAction = async () => {
   if (!contextMenuTarget.value || !selectedStrategyId.value) return
