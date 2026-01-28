@@ -299,6 +299,13 @@
       @submit="handleFormSubmit"
     />
 
+    <!-- 编辑策略弹窗 -->
+    <EditStorageStrategy
+      v-model="editDialogVisible"
+      :id="editStrategyId"
+      @submit="handleFormSubmit"
+    />
+
     <!-- 右键菜单 -->
     <div 
       v-show="contextMenuVisible" 
@@ -375,14 +382,12 @@ import {
 from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import AddStorageStrategy from './oss/AddStorageStrategy.vue'
+import EditStorageStrategy from './oss/EditStorageStrategy.vue'
 import JSZip from 'jszip'
 import { 
   getStorageStrategies, deleteStorageStrategy, getStrategyFiles,
   renameFile, copyFile, deleteFile, getFileLink, getFolderLinks, batchDeleteFiles
 } from '@/api/storage-strategy'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 
 // 类型定义
 interface StorageStrategy {
@@ -401,6 +406,8 @@ interface StorageStrategy {
 // 状态变量
 const searchQuery = ref('')
 const addDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const editStrategyId = ref(0)
 const strategyList = ref<StorageStrategy[]>([])
 const isSelectMode = ref(false)
 const selectedIds = ref<number[]>([])
@@ -491,7 +498,8 @@ const handleAdd = () => {
 }
 
 const handleEdit = (item: StorageStrategy) => {
-  router.push({ name: 'oss-edit', params: { id: item.id } })
+  editStrategyId.value = item.id
+  editDialogVisible.value = true
 }
 
 const handleCardClick = (item: StorageStrategy) => {
@@ -1757,6 +1765,32 @@ const handleDeleteFileAction = async () => {
     height: 1px;
     background-color: var(--border-light);
     margin: 4px 0;
+  }
+}
+
+html.dark .context-menu {
+  background: #1d1e1f;
+  border-color: #4c4d4f;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+
+  .menu-item {
+    color: #cfd3dc;
+
+    &:hover {
+      background-color: #262727;
+      color: #409eff;
+    }
+
+    &.delete {
+      color: #f56c6c;
+      &:hover {
+        background-color: rgba(245, 108, 108, 0.1);
+      }
+    }
+  }
+
+  .divider {
+    background-color: #4c4d4f;
   }
 }
 

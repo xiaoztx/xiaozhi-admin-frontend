@@ -45,10 +45,31 @@ export const useTagsViewStore = defineStore('tagsView', () => {
   }
 
   function delVisitedView(view: TagView) {
-    const index = visitedViews.value.findIndex((v) => v.path === view.path)
-    if (index > -1) {
-      visitedViews.value.splice(index, 1)
-    }
+    if (!view.path) return
+
+    // 1. 确定父级路径前缀
+    const parentPath = view.path.endsWith('/') ? view.path.slice(0, -1) : view.path
+    const prefix = parentPath + '/'
+
+    // 2. 一次性过滤出所有需要保留的视图
+    // 逻辑：删除自己 + 删除所有子路径页面
+    const newVisitedViews: TagView[] = []
+    
+    visitedViews.value.forEach(v => {
+      const isSelf = v.path === view.path
+      const isChild = v.path && v.path.startsWith(prefix)
+
+      if (isSelf || isChild) {
+        // 如果是要删除的页面（自己或子页面），同时清理它的缓存
+        delCachedView(v)
+      } else {
+        // 否则保留
+        newVisitedViews.push(v)
+      }
+    })
+
+    // 3. 更新视图列表
+    visitedViews.value = newVisitedViews
   }
 
   function delCachedView(view: TagView) {

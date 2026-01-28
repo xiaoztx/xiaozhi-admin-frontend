@@ -1,23 +1,24 @@
 <template>
   <div class="tags-view-container">
     <el-scrollbar class="tags-view-wrapper" ref="scrollPaneRef">
-      <router-link
-        v-for="tag in visitedViews"
-        :key="tag.path"
-        :to="{ path: tag.path, query: tag.query }"
-        class="tags-view-item"
-        :class="isActive(tag) ? 'active' : ''"
-        @contextmenu.prevent="openMenu(tag, $event)"
-      >
-        {{ tag.title }}
-        <el-icon
-          v-if="!isAffix(tag)"
-          class="el-icon-close"
-          @click.prevent.stop="closeSelectedTag(tag)"
+      <template v-for="tag in visitedViews" :key="tag.path">
+        <router-link
+          v-if="!tag.meta?.hidden"
+          :to="{ path: tag.path, query: tag.query }"
+          class="tags-view-item"
+          :class="isActive(tag) ? 'active' : ''"
+          @contextmenu.prevent="openMenu(tag, $event)"
         >
-          <Close />
-        </el-icon>
-      </router-link>
+          {{ tag.title }}
+          <el-icon
+            v-if="!isAffix(tag)"
+            class="el-icon-close"
+            @click.prevent.stop="closeSelectedTag(tag)"
+          >
+            <Close />
+          </el-icon>
+        </router-link>
+      </template>
     </el-scrollbar>
 
     <!-- 右侧操作按钮 -->
@@ -199,9 +200,8 @@ function isAffix(tag: TagView) {
 }
 
 function addTags() {
-  const { name, meta } = route
+  const { name } = route
   if (name) {
-    if (meta.hidden) return
     tagsViewStore.addView(route)
   }
 }

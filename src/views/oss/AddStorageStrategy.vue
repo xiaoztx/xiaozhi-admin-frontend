@@ -47,7 +47,60 @@
           前往 <a href="https://console.cloud.tencent.com/cos" target="_blank" class="text-info">腾讯云对象存储控制台</a> 创建存储桶，并获取访问密钥。
         </div>
 
-        <el-form-item label="存储桶名称" prop="config.bucket">
+        <el-form-item label="配置方式">
+          <el-radio-group v-model="configMode">
+            <el-radio label="manual" value="manual">手动输入</el-radio>
+            <el-radio label="auto" value="auto">自动获取</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <!-- 自动获取模式 -->
+        <template v-if="configMode === 'auto'">
+          <el-form-item label="选择云凭证">
+            <el-select 
+              v-model="selectedCloudConfig" 
+              placeholder="请选择腾讯云凭证" 
+              style="width: 100%"
+              clearable
+            >
+              <el-option 
+                v-for="item in cloudConfigs" 
+                :key="item.id" 
+                :label="item.name" 
+                :value="item.id" 
+              />
+            </el-select>
+            <div class="form-tip text-gray-400 text-xs mt-1">
+              自动获取当前用户在云配置管理中配置的腾讯云凭证。
+            </div>
+          </el-form-item>
+
+          <el-form-item label="存储桶名称" v-if="selectedCloudConfig">
+             <el-select 
+               v-model="form.config.bucket" 
+               placeholder="请选择存储桶" 
+               style="width: 100%" 
+               v-loading="loadingBuckets"
+               @change="handleBucketSelect"
+             >
+               <el-option 
+                 v-for="bucket in cloudBuckets" 
+                 :key="bucket.name" 
+                 :label="bucket.name" 
+                 :value="bucket.name"
+               >
+                 <span style="float: left">{{ bucket.name }}</span>
+                 <span style="float: right; color: #8492a6; font-size: 13px">{{ bucket.region }}</span>
+               </el-option>
+             </el-select>
+             <div class="form-tip text-gray-400 text-xs mt-1">
+               从云凭证自动获取的存储桶列表。
+             </div>
+          </el-form-item>
+        </template>
+
+        <!-- 手动输入模式 或 自动模式下的展示 -->
+        <el-form-item label="存储桶名称" prop="config.bucket" v-if="configMode === 'manual'">
           <el-input v-model="form.config.bucket" placeholder="例如 my-bucket-1234567890" />
           <div class="form-tip text-gray-400 text-xs mt-1">
             在腾讯云COS控制台创建的存储桶名称，格式为 bucket-appid。
@@ -55,36 +108,41 @@
         </el-form-item>
 
         <el-form-item label="所属地域" prop="config.region">
-          <el-input v-model="form.config.region" placeholder="例如 ap-shanghai" />
+          <el-input v-model="form.config.region" placeholder="例如 ap-shanghai" :readonly="configMode === 'auto'" />
           <div class="form-tip text-gray-400 text-xs mt-1">
             存储桶所在的地域，例如 ap-shanghai、ap-beijing。
           </div>
         </el-form-item>
 
         <el-form-item label="访问域名" prop="config.domain">
-          <el-input v-model="form.config.domain" placeholder="https://bucket-appid.cos.region.myqcloud.com 或 https://oss.yourdomain.com" />
+          <el-input v-model="form.config.domain" placeholder="https://bucket-appid.cos.region.myqcloud.com 或 https://oss.yourdomain.com" :readonly="configMode === 'auto'" />
           <div class="form-tip text-gray-400 text-xs mt-1">
-            在存储桶概况页面的"域名信息"栏下获取COS访问域名。<br>
-            <span class="text-info">支持的域名类型：</span><br>
-            • 默认域名：https://bucket-appid.cos.region.myqcloud.com<br>
-            • 自定义源站域名：https://oss.yourdomain.com（需在COS控制台绑定）<br>
-            此域名用于API操作（上传、删除、列表等），CDN加速域名请在下方单独配置。
+            <template v-if="configMode === 'auto'">
+              从云凭证自动获取的访问域名。如需自定义或绑定自己的域名，请在创建成功后进入编辑页面修改。
+            </template>
+            <template v-else>
+              在存储桶概况页面的"域名信息"栏下获取COS访问域名。<br>
+              <span class="text-info">支持的域名类型：</span><br>
+              • 默认域名：https://bucket-appid.cos.region.myqcloud.com<br>
+              • 自定义源站域名：https://oss.yourdomain.com（需在COS控制台绑定）<br>
+              此域名用于API操作（上传、删除、列表等），CDN加速域名请在下方单独配置。
+            </template>
           </div>
         </el-form-item>
 
-        <div class="mt-4 mb-2 font-bold">API 密钥信息</div>
-        <div class="form-tip text-gray-400 text-xs mb-4">
+        <div class="mt-4 mb-2 font-bold" v-if="configMode === 'manual'">API 密钥信息</div>
+        <div class="form-tip text-gray-400 text-xs mb-4" v-if="configMode === 'manual'">
           前往 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank" class="text-info">腾讯云API密钥管理</a> 获取您的 SecretId 和 SecretKey。建议使用子用户账号，仅授予COS相关权限。
         </div>
 
-        <el-form-item label="SecretId" prop="config.secretId">
+        <el-form-item label="SecretId" prop="config.secretId" v-if="configMode === 'manual'">
           <el-input v-model="form.config.secretId" placeholder="请输入 SecretId" />
           <div class="form-tip text-gray-400 text-xs mt-1">
             腾讯云API访问密钥 SecretId。
           </div>
         </el-form-item>
 
-        <el-form-item label="SecretKey" prop="config.secretKey">
+        <el-form-item label="SecretKey" prop="config.secretKey" v-if="configMode === 'manual'">
           <el-input v-model="form.config.secretKey" type="password" show-password placeholder="请输入 SecretKey" />
           <div class="form-tip text-gray-400 text-xs mt-1">
             腾讯云API访问密钥 SecretKey。
@@ -107,22 +165,32 @@
             </div>
           </el-form-item>
 
-          <div class="flex gap-4">
-            <el-form-item label="样式分隔符" prop="config.styleSeparator" class="flex-1">
-              <el-input v-model="form.config.styleSeparator" placeholder="例如 ! 或 -" />
-              <div class="form-tip text-gray-400 text-xs mt-1">
-                腾讯云数据万象图片处理样式分隔符，通常为 ! 或 -。
-              </div>
-            </el-form-item>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="样式分隔符" prop="config.styleSeparator">
+                <el-input v-model="form.config.styleSeparator" placeholder="例如 ! 或 -" />
+                <div class="form-tip text-gray-400 text-xs mt-1">
+                  腾讯云数据万象图片处理样式分隔符，通常为 ! 或 -。
+                </div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="默认访问样式" prop="config.visitStyle">
+                <el-input v-model="form.config.visitStyle" placeholder="例如 web 或 original" />
+                <div class="form-tip text-gray-400 text-xs mt-1">
+                  如果开启了原图保护，请在此填写允许访问的样式名称。<br>
+                  <span class="text-danger">注意：如果遇到 "The image can not be accessed, please use style" 错误，说明您的存储桶开启了原图保护，必须在此配置样式。</span>
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-            <el-form-item label="默认访问样式" prop="config.visitStyle" class="flex-1">
-              <el-input v-model="form.config.visitStyle" placeholder="例如 web 或 original" />
-              <div class="form-tip text-gray-400 text-xs mt-1">
-                如果开启了原图保护，请在此填写允许访问的样式名称。<br>
-                <span class="text-danger">注意：如果遇到 "The image can not be accessed, please use style" 错误，说明您的存储桶开启了原图保护，必须在此配置样式，或者去腾讯云控制台关闭原图保护。</span>
-              </div>
-            </el-form-item>
-          </div>
+          <el-form-item label="下线中转">
+             <el-checkbox v-model="form.config.offlineTransfer" label="开启下线中转" />
+             <div class="form-tip text-gray-400 text-xs mt-1">
+               开启后，用户下载文件时会通过 咔卟哆代理，可以提供更好的访问控制和统计。
+             </div>
+           </el-form-item>
 
           <el-form-item label="访问权限" prop="config.acl">
             <div class="acl-options">
@@ -132,7 +200,7 @@
                 @click="form.config.acl = 'public-read'"
               >
                 <div class="acl-radio">
-                  <el-radio v-model="form.config.acl" label="public-read">公有读，私有写</el-radio>
+                  <el-radio v-model="form.config.acl" label="public-read" value="public-read">公有读，私有写</el-radio>
                 </div>
                 <div class="acl-desc">
                   文件可以被公开访问（无需授权），但只有授权用户能上传/修改文件。适合用于网站静态资源、图片等公开内容。
@@ -145,7 +213,7 @@
                 @click="form.config.acl = 'private'"
               >
                 <div class="acl-radio">
-                  <el-radio v-model="form.config.acl" label="private">私有读写</el-radio>
+                  <el-radio v-model="form.config.acl" label="private" value="private">私有读写</el-radio>
                 </div>
                 <div class="acl-desc">
                   文件的读取和写入都需要授权。适合用于存储敏感文件、私人文档等需要权限控制的内容。
@@ -282,6 +350,7 @@
 import { ref, reactive, watch } from 'vue'
 import { type FormInstance, type FormRules, ElMessage } from 'element-plus'
 import { createStorageStrategy } from '@/api/storage-strategy'
+import { getCloudConfigs, getCloudBuckets } from '@/api/cloud-config'
 
 const props = defineProps<{
   visible: boolean
@@ -292,6 +361,11 @@ const emit = defineEmits(['update:visible', 'submit'])
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const loading = ref(false)
+const cloudConfigs = ref<any[]>([])
+const cloudBuckets = ref<any[]>([])
+const loadingBuckets = ref(false)
+const configMode = ref('manual') // manual | auto
+const selectedCloudConfig = ref<number | undefined>(undefined)
 
 const form = reactive({
   id: 0,
@@ -312,7 +386,9 @@ const form = reactive({
     acl: 'public-read',
     uploadType: 'direct',
     styleSeparator: '!',
-    visitStyle: ''
+    visitStyle: '',
+    offlineTransfer: false,
+    noCdnSign: false
   } as Record<string, any>
 })
 
@@ -346,7 +422,62 @@ const resetConfig = () => {
     acl: 'public-read',
     uploadType: 'direct',
     styleSeparator: '!',
-    visitStyle: ''
+    visitStyle: '',
+    offlineTransfer: false,
+    noCdnSign: false
+  }
+  configMode.value = 'manual'
+  selectedCloudConfig.value = undefined
+  cloudBuckets.value = []
+}
+
+// 获取云配置列表
+const fetchCloudConfigs = async () => {
+  try {
+    const res: any = await getCloudConfigs({ 
+      provider: 'tencent',
+      page: 1,
+      pageSize: 100 
+    })
+    cloudConfigs.value = res.list || []
+  } catch (error) {
+    console.error('获取云配置失败', error)
+  }
+}
+
+// 监听云配置选择变化
+watch(selectedCloudConfig, async (newVal) => {
+  if (newVal) {
+    loadingBuckets.value = true
+    cloudBuckets.value = []
+    form.config.bucket = '' // 清空已选Bucket
+    try {
+      const config = cloudConfigs.value.find(c => c.id === newVal)
+      if (config) {
+        form.config.secretId = config.access_key
+        form.config.secretKey = config.secret_key
+      }
+
+      const res: any = await getCloudBuckets(newVal)
+      cloudBuckets.value = res.list || []
+    } catch (error) {
+      console.error('获取存储桶列表失败', error)
+      ElMessage.error('获取存储桶列表失败，请检查凭证是否正确')
+    } finally {
+      loadingBuckets.value = false
+    }
+  } else {
+    cloudBuckets.value = []
+  }
+})
+
+// 监听 Bucket 选择变化 (自动模式下)
+const handleBucketSelect = (bucketName: string) => {
+  const bucket = cloudBuckets.value.find(b => b.name === bucketName)
+  if (bucket) {
+    form.config.bucket = bucket.name
+    form.config.region = bucket.region
+    form.config.domain = `https://${bucket.name}.cos.${bucket.region}.myqcloud.com`
   }
 }
 
@@ -361,6 +492,7 @@ watch(() => props.visible, (val) => {
     form.maxSize = 10485760
     form.status = 'active'
     resetConfig()
+    fetchCloudConfigs() // 打开弹窗时获取配置列表
   }
 })
 
@@ -454,5 +586,30 @@ const handleSubmit = async () => {
 .border { border-width: 1px; }
 .border-gray-100 { border-color: #f3f4f6; }
 .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
-.text-primary { color: #409eff; }
+/* 暗黑模式适配 */
+html.dark .acl-item {
+  border-color: #4c4d4f;
+}
+html.dark .acl-item:hover {
+  border-color: #606266;
+}
+html.dark .acl-item.active {
+  border-color: #409eff;
+  background-color: #262727;
+}
+html.dark .acl-desc {
+  color: #a3a6ad;
+}
+html.dark .upload-type-box {
+  background-color: #1d1e1f;
+}
+html.dark .upload-type-box .text-gray-500 {
+  color: #a3a6ad;
+}
+html.dark .bg-gray-50 {
+  background-color: #1d1e1f;
+}
+html.dark .border-gray-100 {
+  border-color: #4c4d4f;
+}
 </style>
