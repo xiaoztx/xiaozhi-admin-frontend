@@ -187,8 +187,14 @@
             </el-tooltip>
 
             <el-tooltip content="刷新" placement="top">
-              <div class="action-btn" @click="refreshFiles" :class="{'disabled': !selectedStrategyId}">
+              <div class="action-btn" @click="() => refreshFiles(false)" :class="{'disabled': !selectedStrategyId}">
                 <el-icon><Refresh /></el-icon>
+              </div>
+            </el-tooltip>
+
+            <el-tooltip content="批量删除" placement="top" v-if="selectedFiles.length > 0">
+              <div class="action-btn delete-btn" @click="handleBatchDeleteFiles">
+                <el-icon><Delete /></el-icon>
               </div>
             </el-tooltip>
             
@@ -222,7 +228,7 @@
             :key="file.name" 
             class="file-grid-item"
             :class="{'is-selected': selectedFiles.includes(file)}"
-            @click.stop="handleFileClick(file)"
+            @click.stop="handleFileClick(file, $event)"
             @contextmenu.prevent="handleContextMenu($event, file)"
           >
             <div class="file-icon-wrapper">
@@ -252,7 +258,7 @@
             <el-table-column type="selection" width="50" />
             <el-table-column label="文件名" min-width="300">
               <template #default="{ row }">
-                <div class="flex items-center gap-3 cursor-pointer" @click="handleFileClick(row)">
+                <div class="flex items-center gap-3 cursor-pointer" @click="handleFileClick(row, $event)">
                   <el-icon class="text-xl text-yellow-400" v-if="row.isDir"><Folder /></el-icon>
                   <el-icon class="text-xl text-gray-400" v-else><Document /></el-icon>
                   <span class="truncate font-medium text-gray-700">{{ row.name }}</span>
@@ -273,7 +279,16 @@
         </div>
         
         <div class="fm-footer" v-if="fileList.length > 0">
-          — 没有更多了 —
+          <el-button 
+            v-if="hasMore" 
+            text 
+            bg 
+            :loading="loadingFiles"
+            @click="() => refreshFiles(true)"
+          >
+            加载更多
+          </el-button>
+          <span v-else>— 没有更多了 —</span>
         </div>
       </div>
     </div>
@@ -364,7 +379,7 @@ import StorageStrategyForm from './oss/StorageStrategyForm.vue'
 import JSZip from 'jszip'
 import { 
   getStorageStrategies, deleteStorageStrategy, getStrategyFiles,
-  renameFile, copyFile, deleteFile, getFileLink, getFolderLinks
+  renameFile, copyFile, deleteFile, getFileLink, getFolderLinks, batchDeleteFiles
 } from '@/api/storage-strategy'
 
 // 类型定义
@@ -409,6 +424,8 @@ interface FileItem {
 }
 
 const fileList = ref<FileItem[]>([])
+const nextMarker = ref('')
+const hasMore = ref(false)
 
 // 上下文菜单状态
 const contextMenuVisible = ref(false)
@@ -565,17 +582,48 @@ const handleNewFolder = () => {
   ElMessage.info('点击了新建文件夹')
 }
 
-const handleFileClick = (file: FileItem) => {
-  if (file.isDir) {
+const lastSelectedFileIndex = ref(-1)
+
+const handleFileClick = (file: FileItem, event?: MouseEvent) => {
+  // 如果是文件夹且没有按住修饰键，则进入文件夹
+  if (file.isDir && (!event || (!event.ctrlKey && !event.metaKey && !event.shiftKey))) {
     currentPath.value = currentPath.value === '/' ? `/${file.name}` : `${currentPath.value}/${file.name}`
     refreshFiles()
-  } else {
-    // 选中
+    return
+  }
+
+  // 选中逻辑
+  const index = fileList.value.indexOf(file)
+  
+  if (event && event.shiftKey && lastSelectedFileIndex.value !== -1) {
+    // Shift 范围选择
+    const start = Math.min(lastSelectedFileIndex.value, index)
+    const end = Math.max(lastSelectedFileIndex.value, index)
+    
+    // 清空当前选择 (如果是 Ctrl+Shift 可能是追加范围，这里简单实现为重置范围)
+    if (!event.ctrlKey && !event.metaKey) {
+      selectedFiles.value = []
+    }
+    
+    // 添加范围内的文件
+    for (let i = start; i <= end; i++) {
+      const f = fileList.value[i]
+      if (!selectedFiles.value.includes(f)) {
+        selectedFiles.value.push(f)
+      }
+    }
+  } else if (event && (event.ctrlKey || event.metaKey)) {
+    // Ctrl 多选/反选
     if (selectedFiles.value.includes(file)) {
       selectedFiles.value = selectedFiles.value.filter(f => f !== file)
     } else {
       selectedFiles.value.push(file)
     }
+    lastSelectedFileIndex.value = index
+  } else {
+    // 单选
+    selectedFiles.value = [file]
+    lastSelectedFileIndex.value = index
   }
 }
 
@@ -584,10 +632,16 @@ const handlePathClick = (path: string) => {
   refreshFiles()
 }
 
-const refreshFiles = async () => {
+const refreshFiles = async (isLoadMore = false) => {
   if (!selectedStrategyId.value) return
   loadingFiles.value = true
   
+  if (!isLoadMore) {
+    nextMarker.value = ''
+    fileList.value = []
+    selectedFiles.value = []
+  }
+
   try {
     // 构造 prefix
     let prefix = ''
@@ -599,21 +653,58 @@ const refreshFiles = async () => {
     }
 
     const res: any = await getStrategyFiles(selectedStrategyId.value, {
-      prefix
+      prefix,
+      marker: nextMarker.value
     })
     
-    fileList.value = (res.list || []).map((item: any) => ({
+    const newFiles = (res.list || []).map((item: any) => ({
       ...item,
       // 确保类型字段存在
       extension: item.extension || '',
       type: item.isDir ? 'directory' : 'file'
     }))
+
+    if (isLoadMore) {
+      fileList.value = [...fileList.value, ...newFiles]
+    } else {
+      fileList.value = newFiles
+    }
+
+    nextMarker.value = res.nextMarker || ''
+    hasMore.value = !!nextMarker.value
   } catch (error) {
     console.error(error)
     ElMessage.error('获取文件列表失败')
-    fileList.value = []
+    if (!isLoadMore) fileList.value = []
   } finally {
     loadingFiles.value = false
+  }
+}
+
+const handleBatchDeleteFiles = async () => {
+  if (selectedFiles.value.length === 0) return
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedFiles.value.length} 个文件吗？此操作不可恢复。`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const keys = selectedFiles.value.map(f => f.fullName)
+    await batchDeleteFiles(selectedStrategyId.value!, keys)
+    
+    ElMessage.success('批量删除成功')
+    refreshFiles(false)
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error(e)
+      ElMessage.error('批量删除失败')
+    }
   }
 }
 
@@ -906,7 +997,6 @@ const handleDownloadAction = async () => {
 
 const handleCopyLinkAction = async () => {
   if (!contextMenuTarget.value || !selectedStrategyId.value) return
-  const file = contextMenuTarget.value
   
   // 辅助函数：处理 URL 域名
   const formatUrl = (url: string) => {
@@ -952,21 +1042,65 @@ const handleCopyLinkAction = async () => {
     return url
   }
 
+  // 1. 确定操作对象
+  let targetFiles: FileItem[] = []
+  // 检查 contextMenuTarget 是否在 selectedFiles 中
+  const isTargetSelected = selectedFiles.value.some(f => f.fullName === contextMenuTarget.value?.fullName)
+  
+  if (isTargetSelected && selectedFiles.value.length > 1) {
+    targetFiles = [...selectedFiles.value]
+  } else {
+    targetFiles = contextMenuTarget.value ? [contextMenuTarget.value] : []
+  }
+  
+  // 过滤掉文件夹
+  targetFiles = targetFiles.filter(f => !f.isDir)
+  
+  if (targetFiles.length === 0) {
+    ElMessage.info('未选择文件或选中的全是文件夹')
+    return
+  }
+
   try {
-    let urlToCopy = ''
-    if (file.isDir) {
-      // 文件夹暂不支持直接复制链接，或者提示
-      ElMessage.info('文件夹暂不支持复制链接')
-      return
-    } else {
-      // 使用 preview 类型获取链接 (现在后端已经去掉了短链逻辑，会直接返回直链)
-      const res: any = await getFileLink(selectedStrategyId.value, file.fullName, 'preview')
-      urlToCopy = formatUrl(res.link)
+    // 2. 获取链接
+    // 如果只有一个文件，不显示 Loading，体验更好
+    let loading: any = null
+    if (targetFiles.length > 1) {
+      loading = ElLoading.service({
+        lock: true,
+        text: '正在获取链接...',
+        background: 'rgba(0, 0, 0, 0.7)',
+      })
     }
 
-    if (urlToCopy) {
+    const links: string[] = []
+    
+    // 并发请求
+    await Promise.all(targetFiles.map(async (file) => {
+       try {
+         const res: any = await getFileLink(selectedStrategyId.value!, file.fullName, 'preview')
+         if (res.link) {
+           links.push(formatUrl(res.link))
+         }
+       } catch (err) {
+         console.error(`获取文件 ${file.name} 链接失败`, err)
+       }
+    }))
+    
+    if (loading) loading.close()
+    
+    if (links.length === 0) {
+      ElMessage.error('获取链接失败')
+      return
+    }
+
+    // 3. 处理结果
+    // 单个文件：直接复制
+    if (links.length === 1) {
+      const urlToCopy = links[0]
+      if (!urlToCopy) return
+
       navigator.clipboard.writeText(urlToCopy).then(() => {
-        // 简单判断链接是否有签名参数
         const isSigned = urlToCopy.includes('sign=') || 
                          urlToCopy.includes('Signature=') || 
                          urlToCopy.includes('X-Amz-Signature=') ||
@@ -976,19 +1110,32 @@ const handleCopyLinkAction = async () => {
         ElMessage.success('链接已复制到剪贴板' + tip)
       }).catch(err => {
         console.error('复制失败', err)
-        ElMessage.error('复制失败，请手动复制')
-        // 如果自动复制失败，可以降级显示弹窗让用户手动复制
+        // 降级显示弹窗
         linkList.value = [{ url: urlToCopy }]
         linkDialogVisible.value = true
         
-        // 简单判断链接是否有签名参数
         const isSigned = urlToCopy.includes('sign=') || 
                          urlToCopy.includes('Signature=') || 
                          urlToCopy.includes('X-Amz-Signature=') ||
                          urlToCopy.includes('q-signature=')
         linkExpireTime.value = isSigned ? '5分钟' : '永久'
       })
+    } else {
+      // 多个文件：弹窗显示
+      linkList.value = links.map(url => ({ url }))
+      linkDialogVisible.value = true
+      
+      // 设置有效期提示 (取第一个链接判断)
+      const firstUrl = links[0]
+      if (firstUrl) {
+        const isSigned = firstUrl.includes('sign=') || 
+                         firstUrl.includes('Signature=') || 
+                         firstUrl.includes('X-Amz-Signature=') ||
+                         firstUrl.includes('q-signature=')
+        linkExpireTime.value = isSigned ? '5分钟' : '永久'
+      }
     }
+
   } catch (e: any) {
     console.error('获取链接错误:', e)
     ElMessage.error('获取链接失败')
@@ -1065,11 +1212,34 @@ const handleDetailAction = () => {
 
 const handleDeleteFileAction = async () => {
   if (!contextMenuTarget.value || !selectedStrategyId.value) return
-  const file = contextMenuTarget.value
   
+  // 判断逻辑：如果当前右键的文件在已选中的列表中，则执行批量删除
+  // 否则，只删除当前右键的这一个文件
+  let filesToDelete: FileItem[] = []
+  
+  // 修复：使用 fullName 比较而不是对象引用
+  const isTargetSelected = selectedFiles.value.some(f => f.fullName === contextMenuTarget.value?.fullName)
+  
+  if (isTargetSelected) {
+    filesToDelete = [...selectedFiles.value]
+  } else {
+    filesToDelete = contextMenuTarget.value ? [contextMenuTarget.value] : []
+  }
+
+  if (filesToDelete.length === 0) return
+  
+  // 确保第一个元素存在
+  const firstFile = filesToDelete[0]
+  if (!firstFile) return
+
   try {
+    const isBatch = filesToDelete.length > 1
+    const confirmMsg = isBatch 
+      ? `确定要删除选中的 ${filesToDelete.length} 个文件吗？此操作不可恢复。`
+      : `确定要删除 ${firstFile.isDir ? '文件夹' : '文件'} "${firstFile.name}" 吗？`
+
     await ElMessageBox.confirm(
-      `确定要删除 ${file.isDir ? '文件夹' : '文件'} "${file.name}" 吗？`,
+      confirmMsg,
       '删除确认',
       {
         confirmButtonText: '确定',
@@ -1078,9 +1248,17 @@ const handleDeleteFileAction = async () => {
       }
     )
     
-    await deleteFile(selectedStrategyId.value, { key: file.fullName })
+    if (isBatch) {
+       const keys = filesToDelete.map(f => f.fullName)
+       await batchDeleteFiles(selectedStrategyId.value, keys)
+    } else {
+       await deleteFile(selectedStrategyId.value, { key: firstFile.fullName })
+    }
+    
     ElMessage.success('删除成功')
-    refreshFiles()
+    refreshFiles(false)
+    // 清空选择
+    selectedFiles.value = []
   } catch (e) {
     if (e !== 'cancel') {
       console.error(e)

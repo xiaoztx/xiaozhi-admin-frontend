@@ -71,6 +71,15 @@ export const deleteFile = (id: number, data: any) => {
   })
 }
 
+// 批量删除文件
+export const batchDeleteFiles = (id: number, keys: string[]) => {
+  return request({
+    url: `/storage-strategies/${id}/files/batch-delete`,
+    method: 'post',
+    data: { keys }
+  })
+}
+
 // 获取文件链接
 export const getFileLink = (id: number, key: string, type: 'preview' | 'download' = 'preview') => {
   return request({
