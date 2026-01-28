@@ -240,7 +240,7 @@ import {
   ArrowLeft, Search, Plus, RefreshRight, Edit, Delete
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getRecords, createRecord, updateRecord, deleteRecord, setRecordStatus } from '@/api/dns_record'
+import { getRecords, createRecord, updateRecord, deleteRecord, setRecordStatus } from '@/api/dns-record'
 
 const route = useRoute()
 const router = useRouter()

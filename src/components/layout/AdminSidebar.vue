@@ -204,33 +204,33 @@ const menuItems: MenuItem[] = [
     label: '云资源管理', 
     icon: Cloudy,
     children: [
-      { path: '/cloud-config', label: '云账户配置' },
-      { path: '/dns', label: '域名管理' },
-      { path: '/oss', label: '对象存储' },
-      { path: '/ecs', label: '云服务器' },
-      { path: '/cdn', label: '边缘安全加速' }
+      { path: '/cloud/config', label: '云账户配置' },
+      { path: '/cloud/dns', label: '域名管理' },
+      { path: '/cloud/oss', label: '对象存储' },
+      { path: '/cloud/ecs', label: '云服务器' },
+      { path: '/cloud/cdn', label: '边缘安全加速' }
     ]
   },
   { 
-    path: '/github', 
+    path: '/repo', 
     label: '代码仓库', 
     icon: Link,
     children: [
-      { path: '/github/account', label: '账户配置' },
-      { path: '/github/monitor', label: '仓库监控' },
-      { path: '/github/files', label: '文件管理' }
+      { path: '/repo/account', label: '账户配置' },
+      { path: '/repo/monitor', label: '仓库监控' },
+      { path: '/repo/files', label: '文件管理' }
     ]
   },
-  { path: '/notifications', label: '消息通知', icon: Bell },
-  { path: '/logs', label: '操作日志', icon: DocumentCopy },
+  { path: '/system/notifications', label: '消息通知', icon: Bell },
+  { path: '/system/logs', label: '操作日志', icon: DocumentCopy },
   { 
     path: 'group-platform', 
     label: '平台管理', 
     icon: Operation,
     roles: ['super_admin', 'admin', 'guest'],
     children: [
-      { path: '/users', label: '用户管理' },
-      { path: '/settings', label: '系统设置' }
+      { path: '/system/users', label: '用户管理' },
+      { path: '/system/settings', label: '系统设置' }
     ]
   }
 ]

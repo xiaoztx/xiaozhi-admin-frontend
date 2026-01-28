@@ -297,7 +297,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { DataLine, Monitor, Plus, Delete, View, Star, Share, Refresh, Calendar, Clock } from '@element-plus/icons-vue'
-import { getGithubAccounts, getContributions, getGithubMonitors, addGithubMonitor, deleteGithubMonitor, syncGithubMonitor } from '@/api/github'
+import { getGithubAccounts, getContributions, getGithubMonitors, addGithubMonitor, deleteGithubMonitor, syncGithubMonitor } from '@/api/repo'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'

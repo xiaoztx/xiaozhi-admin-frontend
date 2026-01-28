@@ -192,7 +192,7 @@ import {
   Search, Plus, RefreshRight, Edit, Delete, Connection, Star, User, Key
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getGithubAccounts, addGithubAccount, updateGithubAccount, deleteGithubAccount, connectGithubAccount, setPrimaryAccount } from '@/api/github'
+import { getGithubAccounts, addGithubAccount, updateGithubAccount, deleteGithubAccount, connectGithubAccount, setPrimaryAccount } from '@/api/repo'
 
 // 类型定义
 interface GithubAccount {

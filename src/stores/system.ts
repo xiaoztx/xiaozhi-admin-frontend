@@ -21,7 +21,7 @@ export const useSystemStore = defineStore('system', () => {
     try {
       const { data } = await getSystemSettings()
       if (data) {
-        siteName.value = data.site_name || '咔吥哆管理系统'
+        siteName.value = data.site_name || '咔卟哆管理系统'
         logoUrl.value = data.logo_url || ''
         faviconUrl.value = data.site_favicon || ''
         description.value = data.site_desc || ''

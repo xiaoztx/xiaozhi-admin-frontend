@@ -36,9 +36,9 @@
 import { computed, onMounted, ref, provide, nextTick } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { useTagsViewStore } from '@/stores/tagsView'
-import AdminSidebar from '@/components/AdminSidebar.vue'
-import AdminHeader from '@/components/AdminHeader.vue'
-import TagsView from '@/components/TagsView.vue'
+import AdminHeader from '@/components/layout/AdminHeader.vue'
+import AdminSidebar from '@/components/layout/AdminSidebar.vue'
+import TagsView from '@/components/layout/TagsView.vue'
 
 const themeStore = useThemeStore()
 const tagsViewStore = useTagsViewStore()

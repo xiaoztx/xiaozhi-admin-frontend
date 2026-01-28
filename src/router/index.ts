@@ -25,91 +25,91 @@ const router = createRouter({
         {
           path: '',
           name: 'home',
-          component: () => import('@/views/Dashboard.vue'),
+          component: () => import('@/views/dashboard/Index.vue'),
           meta: { title: '首页', affix: true }
         },
         {
-          path: 'users',
+          path: 'system/users',
           name: 'users',
-          component: () => import('@/views/UserManagement.vue'),
+          component: () => import('@/views/system/User.vue'),
           meta: { title: '用户管理', roles: ['super_admin', 'admin', 'guest'] }
         },
         {
-          path: 'cloud-config',
+          path: 'cloud/config',
           name: 'cloud-config',
-          component: () => import('@/views/CloudConfig.vue'),
+          component: () => import('@/views/cloud/Config.vue'),
           meta: { title: '云配置管理' }
         },
         {
-          path: 'dns',
+          path: 'cloud/dns',
           name: 'dns',
-          component: () => import('@/views/DNSManagement.vue'),
+          component: () => import('@/views/dns/List.vue'),
           meta: { title: '域名管理' }
         },
         {
-          path: 'dns/:domain/records',
+          path: 'cloud/dns/:domain/records',
           name: 'dns-records',
-          component: () => import('@/views/DNSRecordManagement.vue'),
+          component: () => import('@/views/dns/Records.vue'),
           meta: { title: '解析记录' }
         },
         {
-          path: 'oss',
+          path: 'cloud/oss',
           name: 'oss',
-          component: () => import('@/views/OSSManagement.vue'),
+          component: () => import('@/views/oss/List.vue'),
           meta: { title: '对象存储管理' }
         },
         {
-          path: 'ecs',
+          path: 'cloud/ecs',
           name: 'ecs',
-          component: () => import('@/views/ECSManagement.vue'),
+          component: () => import('@/views/cloud/ECS.vue'),
           meta: { title: '云服务器' }
         },
         {
-          path: 'cdn',
+          path: 'cloud/cdn',
           name: 'cdn',
-          component: () => import('@/views/CDNManagement.vue'),
+          component: () => import('@/views/cloud/CDN.vue'),
           meta: { title: '边缘安全加速' }
         },
         {
-          path: 'github/account',
-          name: 'github-account',
-          component: () => import('@/views/github/GitHubAccount.vue'),
-          meta: { title: 'GitHub账户配置' }
+          path: 'repo/account',
+          name: 'repo-account',
+          component: () => import('@/views/repo/Account.vue'),
+          meta: { title: '代码仓库配置' }
         },
         {
-          path: 'github/monitor',
-          name: 'github-monitor',
-          component: () => import('@/views/github/GitHubMonitor.vue'),
-          meta: { title: 'GitHub仓库监控' }
+          path: 'repo/monitor',
+          name: 'repo-monitor',
+          component: () => import('@/views/repo/Monitor.vue'),
+          meta: { title: '仓库监控' }
         },
         {
-          path: 'github/files',
-          name: 'github-files',
-          component: () => import('@/views/github/GitHubFiles.vue'),
+          path: 'repo/files',
+          name: 'repo-files',
+          component: () => import('@/views/repo/Files.vue'),
           meta: { title: '文件管理' }
         },
         {
-          path: 'profile',
+          path: 'system/profile',
           name: 'profile',
-          component: () => import('@/views/UserProfile.vue'),
+          component: () => import('@/views/system/Profile.vue'),
           meta: { title: '个人中心' }
         },
         {
-          path: 'settings',
+          path: 'system/settings',
           name: 'settings',
-          component: () => import('@/views/SystemSettings.vue'),
+          component: () => import('@/views/system/Settings.vue'),
           meta: { title: '系统设置', roles: ['super_admin', 'admin', 'guest'] }
         },
         {
-          path: 'notifications',
+          path: 'system/notifications',
           name: 'notifications',
-          component: () => import('@/views/Notifications.vue'),
+          component: () => import('@/views/system/Notifications.vue'),
           meta: { title: '消息通知' }
         },
         {
-          path: 'logs',
+          path: 'system/logs',
           name: 'logs',
-          component: () => import('@/views/OperationLogs.vue'),
+          component: () => import('@/views/system/Logs.vue'),
           meta: { title: '操作日志' }
         }
       ]

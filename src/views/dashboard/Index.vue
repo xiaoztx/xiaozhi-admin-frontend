@@ -243,7 +243,7 @@ const currentTime = ref({
   date: ''
 })
 
-let timer: number | null = null
+let timer: ReturnType<typeof setInterval> | null = null
 
 const updateTime = () => {
   const now = new Date()

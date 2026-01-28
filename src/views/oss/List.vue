@@ -381,8 +381,8 @@ import {
 }
 from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import AddStorageStrategy from './oss/AddStorageStrategy.vue'
-import EditStorageStrategy from './oss/EditStorageStrategy.vue'
+import AddStorageStrategy from './AddStrategy.vue'
+import EditStorageStrategy from './EditStrategy.vue'
 import JSZip from 'jszip'
 import { 
   getStorageStrategies, deleteStorageStrategy, getStrategyFiles,

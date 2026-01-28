@@ -248,7 +248,7 @@ import {
   Connection
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getCloudConfigs, createCloudConfig, updateCloudConfig, deleteCloudConfig, connectTest } from '../api/cloud-config'
+import { getCloudConfigs, createCloudConfig, updateCloudConfig, deleteCloudConfig, connectTest } from '@/api/cloud-config'
 
 // 类型定义
 interface CloudConfig {
@@ -512,9 +512,7 @@ onMounted(() => {
   max-width: 1600px;
   margin: 0 auto;
 
-  .stats-cards {
-    // 这里的样式已经提取到全局 main.scss
-  }
+  // .stats-cards 样式已经提取到全局 main.scss
 
   .main-card {
     border: none;
