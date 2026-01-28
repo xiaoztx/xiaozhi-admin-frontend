@@ -32,235 +32,117 @@
 
     <!-- 导航菜单 -->
     <nav class="sidebar-nav">
-      <div class="nav-section">
-        <div v-if="!isCollapsed" class="section-title">主导航</div>
-        <ul class="nav-menu">
-          <li class="nav-item">
-            <router-link
-              to="/"
-              class="nav-link"
-              :class="{ active: $route.path === '/' }"
+      <ul class="nav-menu">
+        <template v-for="item in menuItems" :key="item.path">
+          <!-- 有权限才显示 -->
+          <li v-if="hasPermission(item.roles)" class="nav-item">
+            
+            <!-- Case 1: 带子菜单的项目 (如 GitHub) -->
+            <div 
+              v-if="item.children" 
+              @mouseenter="handleMouseEnter" 
+              @mouseleave="handleMouseLeave"
             >
-              <div class="nav-icon">
-                <el-icon><House /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">首页</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/' }"></div>
-            </router-link>
-          </li>
+              <!-- 折叠模式下的 Popover 菜单 -->
+              <el-popover
+                v-if="isCollapsed"
+                placement="right"
+                :width="200"
+                trigger="hover"
+                popper-class="sidebar-submenu-popover"
+                :show-arrow="false"
+                :offset="0"
+              >
+                <template #reference>
+                  <div 
+                    class="nav-link cursor-pointer"
+                    :class="{ active: isPathActive(item) }"
+                  >
+                    <div class="nav-icon">
+                      <el-icon><component :is="item.icon" /></el-icon>
+                    </div>
+                    <span v-if="!isCollapsed" class="nav-label flex-1">{{ item.label }}</span>
+                    <el-icon 
+                      v-if="!isCollapsed" 
+                      class="arrow-icon"
+                      :class="{ 'is-expanded': expandedMenus[item.path] }"
+                    >
+                      <ArrowRight />
+                    </el-icon>
+                    <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: isPathActive(item) }"></div>
+                  </div>
+                </template>
+                
+                <!-- Popover Content -->
+                <div class="popover-menu">
+                  <div class="popover-title">{{ item.label }}</div>
+                  <ul class="popover-list">
+                    <li v-for="subItem in item.children" :key="subItem.path">
+                      <router-link
+                        :to="subItem.path"
+                        class="popover-link"
+                        :class="{ active: $route.path === subItem.path }"
+                      >
+                        <span class="sub-dot"></span>
+                        {{ subItem.label }}
+                      </router-link>
+                    </li>
+                  </ul>
+                </div>
+              </el-popover>
 
-          <li class="nav-item" v-if="isAdmin || isGuest">
-            <router-link
-              to="/users"
-              class="nav-link"
-              :class="{ active: $route.path === '/users' }"
-            >
-              <div class="nav-icon">
-                <el-icon><User /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">用户管理</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/users' }"></div>
-            </router-link>
-          </li>
-        </ul>
-      </div>
-
-      <div class="nav-section">
-        <div v-if="!isCollapsed" class="section-title">系统管理</div>
-        <ul class="nav-menu">
-          <li class="nav-item">
-            <router-link
-              to="/cloud-config"
-              class="nav-link"
-              :class="{ active: $route.path === '/cloud-config' }"
-            >
-              <div class="nav-icon">
-                <el-icon><Setting /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">云配置管理</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/cloud-config' }"></div>
-            </router-link>
-          </li>
-
-          <li class="nav-item">
-            <router-link
-              to="/dns"
-              class="nav-link"
-              :class="{ active: $route.path === '/dns' }"
-            >
-              <div class="nav-icon">
-                <el-icon><Monitor /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">域名管理</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/dns' }"></div>
-            </router-link>
-          </li>
-
-          <li class="nav-item">
-            <router-link
-              to="/oss"
-              class="nav-link"
-              :class="{ active: $route.path === '/oss' }"
-            >
-              <div class="nav-icon">
-                <el-icon><FolderOpened /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">对象存储管理</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/oss' }"></div>
-            </router-link>
-          </li>
-
-          <li class="nav-item" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-            <el-popover
-              v-if="isCollapsed"
-              placement="right"
-              :width="200"
-              trigger="hover"
-              popper-class="sidebar-submenu-popover"
-              :show-arrow="false"
-              :offset="0"
-            >
-              <template #reference>
+              <!-- 展开模式下的内联菜单 -->
+              <template v-else>
                 <div 
                   class="nav-link cursor-pointer"
-                  :class="{ active: $route.path.startsWith('/github') }"
+                  :class="{ active: isPathActive(item) }"
+                  @click="toggleExpand(item.path)"
                 >
                   <div class="nav-icon">
-                    <el-icon><Link /></el-icon>
+                    <el-icon><component :is="item.icon" /></el-icon>
                   </div>
-                  <span v-if="!isCollapsed" class="nav-label flex-1">GitHub管理</span>
+                  <span class="nav-label flex-1">{{ item.label }}</span>
                   <el-icon 
-                    v-if="!isCollapsed" 
                     class="arrow-icon"
-                    :class="{ 'is-expanded': isGithubExpanded }"
+                    :class="{ 'is-expanded': expandedMenus[item.path] }"
                   >
                     <ArrowRight />
                   </el-icon>
-                  <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path.startsWith('/github') }"></div>
+                  <div class="nav-indicator" :class="{ active: isPathActive(item) }"></div>
                 </div>
-              </template>
-              
-              <!-- Popover Content (Collapsed Mode) -->
-              <div class="popover-menu">
-                <div class="popover-title">GitHub管理</div>
-                <ul class="popover-list">
-                  <li>
+                
+                <!-- 子菜单列表 -->
+                <ul v-show="expandedMenus[item.path]" class="sub-menu transition-all duration-300">
+                  <li v-for="subItem in item.children" :key="subItem.path" class="sub-item">
                     <router-link
-                      to="/github/monitor"
-                      class="popover-link"
-                      :class="{ active: $route.path === '/github/monitor' }"
+                      :to="subItem.path"
+                      class="sub-link"
+                      :class="{ active: $route.path === subItem.path }"
                     >
                       <span class="sub-dot"></span>
-                      仓库监控
-                    </router-link>
-                  </li>
-                  <li>
-                    <router-link
-                      to="/github/account"
-                      class="popover-link"
-                      :class="{ active: $route.path === '/github/account' }"
-                    >
-                      <span class="sub-dot"></span>
-                      账户配置
+                      <span class="sub-label">{{ subItem.label }}</span>
                     </router-link>
                   </li>
                 </ul>
-              </div>
-            </el-popover>
-
-            <!-- Normal Mode (Not Collapsed) -->
-            <div 
-              v-else
-              class="nav-link cursor-pointer"
-              :class="{ active: $route.path.startsWith('/github') }"
-              @click="toggleGithubExpand"
-            >
-              <div class="nav-icon">
-                <el-icon><Link /></el-icon>
-              </div>
-              <span class="nav-label flex-1">GitHub管理</span>
-              <el-icon 
-                class="arrow-icon"
-                :class="{ 'is-expanded': isGithubExpanded }"
-              >
-                <ArrowRight />
-              </el-icon>
-              <div class="nav-indicator" :class="{ active: $route.path.startsWith('/github') }"></div>
+              </template>
             </div>
-            
-            <!-- 子菜单 (展开模式) -->
-            <ul v-show="!isCollapsed && isGithubExpanded" class="sub-menu transition-all duration-300">
-              <li class="sub-item">
-                <router-link
-                  to="/github/monitor"
-                  class="sub-link"
-                  :class="{ active: $route.path === '/github/monitor' }"
-                >
-                  <span class="sub-dot"></span>
-                  <span class="sub-label">仓库监控</span>
-                </router-link>
-              </li>
-              <li class="sub-item">
-                <router-link
-                  to="/github/account"
-                  class="sub-link"
-                  :class="{ active: $route.path === '/github/account' }"
-                >
-                  <span class="sub-dot"></span>
-                  <span class="sub-label">账户配置</span>
-                </router-link>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
 
-      <div class="nav-section">
-        <div v-if="!isCollapsed" class="section-title">系统工具</div>
-        <ul class="nav-menu">
-          <li class="nav-item" v-if="isAdmin || isGuest">
+            <!-- Case 2: 普通菜单项 -->
             <router-link
-              to="/settings"
+              v-else
+              :to="item.path"
               class="nav-link"
-              :class="{ active: $route.path === '/settings' }"
+              :class="{ active: isPathActive(item) }"
             >
               <div class="nav-icon">
-                <el-icon><Tools /></el-icon>
+                <el-icon><component :is="item.icon" /></el-icon>
               </div>
-              <span v-if="!isCollapsed" class="nav-label">系统设置</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/settings' }"></div>
+              <span v-if="!isCollapsed" class="nav-label">{{ item.label }}</span>
+              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: isPathActive(item) }"></div>
             </router-link>
           </li>
-
-          <li class="nav-item">
-            <router-link
-              to="/notifications"
-              class="nav-link"
-              :class="{ active: $route.path === '/notifications' }"
-            >
-              <div class="nav-icon">
-                <el-icon><Bell /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">消息通知</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/notifications' }"></div>
-            </router-link>
-          </li>
-
-          <li class="nav-item">
-            <router-link
-              to="/logs"
-              class="nav-link"
-              :class="{ active: $route.path === '/logs' }"
-            >
-              <div class="nav-icon">
-                <el-icon><DocumentCopy /></el-icon>
-              </div>
-              <span v-if="!isCollapsed" class="nav-label">操作日志</span>
-              <div v-if="!isCollapsed" class="nav-indicator" :class="{ active: $route.path === '/logs' }"></div>
-            </router-link>
-          </li>
-        </ul>
-      </div>
+        </template>
+      </ul>
     </nav>
 
     <!-- 底部信息 -->
@@ -284,15 +166,13 @@ import { useSystemStore } from '@/stores/system'
 import { useUserStore } from '@/stores/user'
 import {
   House,
-  User,
-  Setting,
-  Monitor,
-  FolderOpened,
   Link,
-  Tools,
   DocumentCopy,
   ArrowRight,
-  Bell
+  Bell,
+  Close,
+  Cloudy,
+  Operation
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -303,40 +183,102 @@ const userStore = useUserStore()
 const isCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
 const isMobile = computed(() => window.innerWidth <= 768)
-const isGithubExpanded = ref(false)
 
 const siteName = computed(() => systemStore.siteName)
 const logoUrl = computed(() => systemStore.logoUrl)
-const isAdmin = computed(() => ['super_admin', 'admin'].includes(userStore.userInfo.role))
-const isGuest = computed(() => userStore.userInfo.role === 'guest')
 
-// 监听路由变化，自动展开对应菜单
-watch(() => route.path, (newPath) => {
-  if (newPath.startsWith('/github')) {
-    isGithubExpanded.value = true
+// 菜单配置类型定义
+interface MenuItem {
+  path: string
+  label: string
+  icon?: any
+  roles?: string[]
+  children?: MenuItem[]
+}
+
+// 菜单配置
+const menuItems: MenuItem[] = [
+  { path: '/', label: '首页', icon: House },
+  { 
+    path: 'group-cloud', 
+    label: '云资源管理', 
+    icon: Cloudy,
+    children: [
+      { path: '/cloud-config', label: '云账户配置' },
+      { path: '/dns', label: '域名管理' },
+      { path: '/oss', label: '对象存储' },
+      { path: '/ecs', label: '云服务器' },
+      { path: '/cdn', label: '边缘安全加速' }
+    ]
+  },
+  { 
+    path: '/github', 
+    label: '代码仓库', 
+    icon: Link,
+    children: [
+      { path: '/github/account', label: '账户配置' },
+      { path: '/github/monitor', label: '仓库监控' },
+      { path: '/github/files', label: '文件管理' }
+    ]
+  },
+  { path: '/notifications', label: '消息通知', icon: Bell },
+  { path: '/logs', label: '操作日志', icon: DocumentCopy },
+  { 
+    path: 'group-platform', 
+    label: '平台管理', 
+    icon: Operation,
+    roles: ['super_admin', 'admin', 'guest'],
+    children: [
+      { path: '/users', label: '用户管理' },
+      { path: '/settings', label: '系统设置' }
+    ]
   }
+]
+
+// 状态管理
+const expandedMenus = ref<Record<string, boolean>>({})
+
+// 权限检查
+const hasPermission = (roles?: string[]) => {
+  if (!roles || roles.length === 0) return true
+  return roles.includes(userStore.userInfo.role)
+}
+
+// 路径激活检查
+const isPathActive = (item: MenuItem) => {
+  if (item.children) {
+    return item.children.some(child => route.path.startsWith(child.path))
+  }
+  return route.path === item.path || (item.path !== '/' && route.path.startsWith(item.path))
+}
+
+// 切换展开状态
+const toggleExpand = (path: string) => {
+  expandedMenus.value[path] = !expandedMenus.value[path]
+}
+
+// 监听路由变化，自动展开对应父菜单
+watch(() => route.path, (newPath) => {
+  menuItems.forEach(item => {
+    if (item.children) {
+      const hasActiveChild = item.children.some(child => newPath.startsWith(child.path))
+      if (hasActiveChild) {
+        expandedMenus.value[item.path] = true
+      }
+    }
+  })
 }, { immediate: true })
 
 const closeMobileMenu = () => {
   themeStore.closeMobileMenu()
 }
 
-const toggleGithubExpand = () => {
-  isGithubExpanded.value = !isGithubExpanded.value
-}
-
 const handleMouseEnter = () => {
-  if (!isCollapsed.value) {
-    // 移除自动展开，改为点击展开
-    // isGithubExpanded.value = true
-  }
+  // 暂时保留空实现，以防未来需要
 }
 
 const handleMouseLeave = () => {
-  if (!isCollapsed.value && !route.path.startsWith('/github')) {
-    // 移除自动收起，保持状态
-    // isGithubExpanded.value = false
-  }
+  // 暂时保留空实现
 }
 </script>
 
@@ -541,154 +483,136 @@ const handleMouseLeave = () => {
     border-radius: 2px;
   }
 
-  .nav-section {
-    margin-bottom: 24px;
+  .nav-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+    .nav-item {
+      margin: 1px var(--space-2);
 
-    .section-title {
-      padding: 0 20px 8px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 4px;
-    }
+      .nav-link {
+        display: flex;
+        align-items: center;
+        padding: var(--space-2) var(--space-3);
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: all var(--transition-fast);
+        position: relative;
+        cursor: pointer;
 
-    .nav-menu {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-
-      .nav-item {
-        margin: 1px var(--space-2);
-
-        .nav-link {
-          display: flex;
-          align-items: center;
-          padding: var(--space-2) var(--space-3);
-          border-radius: var(--radius-md);
-          text-decoration: none;
+        &:hover {
+          background-color: var(--bg-tertiary);
           color: var(--text-primary);
-          transition: all var(--transition-fast);
-          position: relative;
-          cursor: pointer;
+        }
 
-          &:hover {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-          }
+        &:active {
+          transform: scale(0.98);
+        }
 
-          &:active {
-            transform: scale(0.98);
-          }
+        &.active {
+          background-color: var(--bg-tertiary);
+          color: var(--text-primary);
+          font-weight: var(--font-weight-semibold);
 
-          &.active {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            font-weight: var(--font-weight-semibold);
-
-            &::before {
-              content: '';
-              position: absolute;
-              left: 0;
-              top: 50%;
-              transform: translateY(-50%);
-              width: 3px;
-              height: 60%;
-              background: var(--color-primary);
-              border-radius: var(--radius-sm);
-            }
-
-            .nav-icon {
-              color: var(--color-primary);
-            }
+          &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: var(--color-primary);
+            border-radius: var(--radius-sm);
           }
 
           .nav-icon {
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            transition: color var(--transition-fast);
-            margin-right: var(--space-2);
-            flex-shrink: 0;
-
-            .el-icon {
-              font-size: 16px;
-            }
-          }
-
-          .nav-label {
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          
-          .arrow-icon {
-            font-size: 12px;
-            color: var(--text-tertiary);
-            transition: transform var(--transition-normal);
-            margin-left: 8px;
-            
-            &.is-expanded {
-              transform: rotate(90deg);
-            }
+            color: var(--color-primary);
           }
         }
+
+        .nav-icon {
+          width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-secondary);
+          transition: color var(--transition-fast);
+          margin-right: var(--space-2);
+          flex-shrink: 0;
+
+          .el-icon {
+            font-size: 16px;
+          }
+        }
+
+        .nav-label {
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         
-        .sub-menu {
-          list-style: none;
-          padding: 4px 0 4px 20px;
-          margin: 0;
+        .arrow-icon {
+          font-size: 12px;
+          color: var(--text-tertiary);
+          transition: transform var(--transition-normal);
+          margin-left: 8px;
           
-          .sub-item {
-            margin: 2px 0;
+          &.is-expanded {
+            transform: rotate(90deg);
+          }
+        }
+      }
+      
+      .sub-menu {
+        list-style: none;
+        padding: 4px 0 4px 20px;
+        margin: 0;
+        
+        .sub-item {
+          margin: 2px 0;
+          
+          .sub-link {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px 8px 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
             
-            .sub-link {
-              display: flex;
-              align-items: center;
-              padding: 8px 12px 8px 24px;
-              color: var(--text-secondary);
-              text-decoration: none;
-              font-size: 13px;
-              border-radius: var(--radius-md);
-              transition: all var(--transition-fast);
+            .sub-dot {
+              width: 4px;
+              height: 4px;
+              border-radius: 50%;
+              background-color: currentColor;
+              margin-right: 8px;
+              opacity: 0.6;
+            }
+            
+            &:hover {
+              color: var(--text-primary);
+              background-color: var(--bg-tertiary);
               
               .sub-dot {
-                width: 4px;
-                height: 4px;
-                border-radius: 50%;
-                background-color: currentColor;
-                margin-right: 8px;
-                opacity: 0.6;
+                opacity: 1;
               }
+            }
+            
+            &.active {
+              color: var(--color-primary);
+              background-color: var(--bg-tertiary);
+              font-weight: 500;
               
-              &:hover {
-                color: var(--text-primary);
-                background-color: var(--bg-tertiary);
-                
-                .sub-dot {
-                  opacity: 1;
-                }
-              }
-              
-              &.active {
-                color: var(--color-primary);
-                background-color: var(--bg-tertiary);
-                font-weight: 500;
-                
-                .sub-dot {
-                  opacity: 1;
-                  background-color: var(--color-primary);
-                }
+              .sub-dot {
+                opacity: 1;
+                background-color: var(--color-primary);
               }
             }
           }

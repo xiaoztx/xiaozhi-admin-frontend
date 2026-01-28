@@ -59,6 +59,18 @@ const router = createRouter({
           meta: { title: '对象存储管理' }
         },
         {
+          path: 'ecs',
+          name: 'ecs',
+          component: () => import('@/views/ECSManagement.vue'),
+          meta: { title: '云服务器' }
+        },
+        {
+          path: 'cdn',
+          name: 'cdn',
+          component: () => import('@/views/CDNManagement.vue'),
+          meta: { title: '边缘安全加速' }
+        },
+        {
           path: 'github/account',
           name: 'github-account',
           component: () => import('@/views/github/GitHubAccount.vue'),
@@ -69,6 +81,12 @@ const router = createRouter({
           name: 'github-monitor',
           component: () => import('@/views/github/GitHubMonitor.vue'),
           meta: { title: 'GitHub仓库监控' }
+        },
+        {
+          path: 'github/files',
+          name: 'github-files',
+          component: () => import('@/views/github/GitHubFiles.vue'),
+          meta: { title: '文件管理' }
         },
         {
           path: 'profile',
