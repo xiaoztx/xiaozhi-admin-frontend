@@ -9,6 +9,14 @@ export const getStorageStrategies = (params: any) => {
   })
 }
 
+// 获取单个存储策略详情
+export const getStorageStrategy = (id: number) => {
+  return request({
+    url: `/storage-strategies/${id}`,
+    method: 'get'
+  })
+}
+
 // 创建存储策略
 export const createStorageStrategy = (data: any) => {
   return request({

@@ -199,8 +199,9 @@ function isAffix(tag: TagView) {
 }
 
 function addTags() {
-  const { name } = route
+  const { name, meta } = route
   if (name) {
+    if (meta.hidden) return
     tagsViewStore.addView(route)
   }
 }

@@ -293,10 +293,9 @@
       </div>
     </div>
 
-    <!-- 添加/编辑策略弹窗 -->
-    <StorageStrategyForm
-      v-model:visible="dialogVisible"
-      :edit-data="currentEditItem"
+    <!-- 添加策略弹窗 -->
+    <AddStorageStrategy
+      v-model:visible="addDialogVisible"
       @submit="handleFormSubmit"
     />
 
@@ -375,12 +374,15 @@ import {
 }
 from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import StorageStrategyForm from './oss/StorageStrategyForm.vue'
+import AddStorageStrategy from './oss/AddStorageStrategy.vue'
 import JSZip from 'jszip'
 import { 
   getStorageStrategies, deleteStorageStrategy, getStrategyFiles,
   renameFile, copyFile, deleteFile, getFileLink, getFolderLinks, batchDeleteFiles
 } from '@/api/storage-strategy'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // 类型定义
 interface StorageStrategy {
@@ -398,8 +400,7 @@ interface StorageStrategy {
 
 // 状态变量
 const searchQuery = ref('')
-const dialogVisible = ref(false)
-const currentEditItem = ref<StorageStrategy | undefined>(undefined)
+const addDialogVisible = ref(false)
 const strategyList = ref<StorageStrategy[]>([])
 const isSelectMode = ref(false)
 const selectedIds = ref<number[]>([])
@@ -486,13 +487,11 @@ const handleRefresh = () => {
 }
 
 const handleAdd = () => {
-  currentEditItem.value = undefined
-  dialogVisible.value = true
+  addDialogVisible.value = true
 }
 
 const handleEdit = (item: StorageStrategy) => {
-  currentEditItem.value = item
-  dialogVisible.value = true
+  router.push({ name: 'oss-edit', params: { id: item.id } })
 }
 
 const handleCardClick = (item: StorageStrategy) => {

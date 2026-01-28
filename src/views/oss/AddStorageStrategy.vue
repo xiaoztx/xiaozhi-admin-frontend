@@ -1,14 +1,14 @@
 <template>
   <el-dialog
     :model-value="visible"
-    :title="isEdit ? '编辑存储策略' : '添加存储策略'"
+    title="添加存储策略"
     width="600px"
     destroy-on-close
     align-center
     class="oss-dialog"
     @update:model-value="emit('update:visible', $event)"
   >
-    <div class="dialog-content">
+    <div class="dialog-content" v-loading="loading">
       <el-form
         ref="formRef"
         :model="form"
@@ -47,99 +47,49 @@
           前往 <a href="https://console.cloud.tencent.com/cos" target="_blank" class="text-info">腾讯云对象存储控制台</a> 创建存储桶，并获取访问密钥。
         </div>
 
-        <el-form-item label="配置方式" prop="config.mode">
-          <el-radio-group v-model="form.config.mode" @change="handleModeChange">
-            <el-radio label="manual">手动输入</el-radio>
-            <el-radio label="auto">自动获取</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <template v-if="form.config.mode === 'auto'">
-          <el-form-item label="选择云凭证" prop="config.credentialId">
-            <el-select v-model="form.config.credentialId" placeholder="请选择云凭证" style="width: 100%" @change="handleCredentialChange">
-              <el-option
-                v-for="item in credentialOptions"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </el-select>
-            <div class="form-tip text-gray-400 text-xs mt-1">
-              自动获取当前用户在云配置管理中配置的腾讯云凭证。
-            </div>
-          </el-form-item>
-
-          <template v-if="form.config.credentialId">
-            <el-form-item label="存储桶名称" prop="config.bucket">
-              <el-select 
-                v-model="form.config.bucket" 
-                placeholder="请选择存储桶" 
-                style="width: 100%"
-                @change="handleBucketChange"
-              >
-                <el-option
-                  v-for="item in bucketOptions"
-                  :key="item.name"
-                  :label="item.name"
-                  :value="item.name"
-                >
-                  <span style="float: left">{{ item.name }}</span>
-                  <span style="float: right; color: #8492a6; font-size: 13px">{{ item.region }}</span>
-                </el-option>
-              </el-select>
-              <div class="form-tip text-gray-400 text-xs mt-1">
-                从云凭证自动获取的存储桶列表。
-              </div>
-            </el-form-item>
-
-            <el-form-item label="访问域名" prop="config.domain">
-              <el-input v-model="form.config.domain" placeholder="自动获取访问域名" />
-              <div class="form-tip text-gray-400 text-xs mt-1">
-                从云凭证自动获取的访问域名，<span class="text-info">支持手动修改</span>（例如配置了CDN加速域名）。<br>
-                <span class="text-warning">注意：请确保该云凭证拥有获取存储桶列表及文件的读写权限 (ListBucket, GetObject, PutObject 等)。</span>
-              </div>
-            </el-form-item>
-          </template>
-        </template>
-
-        <template v-if="form.config.mode === 'manual'">
-          <el-form-item label="存储桶名称" prop="config.bucket">
+        <el-form-item label="存储桶名称" prop="config.bucket">
           <el-input v-model="form.config.bucket" placeholder="例如 my-bucket-1234567890" />
           <div class="form-tip text-gray-400 text-xs mt-1">
             在腾讯云COS控制台创建的存储桶名称，格式为 bucket-appid。
           </div>
         </el-form-item>
 
-        <el-form-item label="访问域名" prop="config.domain">
-            <el-input v-model="form.config.domain" placeholder="https://bucket-appid.cos.region.myqcloud.com 或 https://oss.yourdomain.com" />
-            <div class="form-tip text-gray-400 text-xs mt-1">
-              在存储桶概况页面的"域名信息"栏下获取COS访问域名。<br>
-              <span class="text-info">支持的域名类型：</span><br>
-              • 默认域名：https://bucket-appid.cos.region.myqcloud.com<br>
-              • 自定义源站域名：https://oss.yourdomain.com（需在COS控制台绑定）<br>
-              此域名用于API操作（上传、删除、列表等），CDN加速域名请在下方单独配置。
-            </div>
-          </el-form-item>
-
-          <div class="mt-4 mb-2 font-bold">API 密钥信息</div>
-          <div class="form-tip text-gray-400 text-xs mb-4">
-            前往 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank" class="text-info">腾讯云API密钥管理</a> 获取您的 SecretId 和 SecretKey。建议使用子用户账号，仅授予COS相关权限。
+        <el-form-item label="所属地域" prop="config.region">
+          <el-input v-model="form.config.region" placeholder="例如 ap-shanghai" />
+          <div class="form-tip text-gray-400 text-xs mt-1">
+            存储桶所在的地域，例如 ap-shanghai、ap-beijing。
           </div>
+        </el-form-item>
 
-          <el-form-item label="SecretId" prop="config.secretId">
-            <el-input v-model="form.config.secretId" placeholder="请输入 SecretId" />
-            <div class="form-tip text-gray-400 text-xs mt-1">
-              腾讯云API访问密钥 SecretId。
-            </div>
-          </el-form-item>
+        <el-form-item label="访问域名" prop="config.domain">
+          <el-input v-model="form.config.domain" placeholder="https://bucket-appid.cos.region.myqcloud.com 或 https://oss.yourdomain.com" />
+          <div class="form-tip text-gray-400 text-xs mt-1">
+            在存储桶概况页面的"域名信息"栏下获取COS访问域名。<br>
+            <span class="text-info">支持的域名类型：</span><br>
+            • 默认域名：https://bucket-appid.cos.region.myqcloud.com<br>
+            • 自定义源站域名：https://oss.yourdomain.com（需在COS控制台绑定）<br>
+            此域名用于API操作（上传、删除、列表等），CDN加速域名请在下方单独配置。
+          </div>
+        </el-form-item>
 
-          <el-form-item label="SecretKey" prop="config.secretKey">
-            <el-input v-model="form.config.secretKey" type="password" show-password placeholder="请输入 SecretKey" />
-            <div class="form-tip text-gray-400 text-xs mt-1">
-              腾讯云API访问密钥 SecretKey。
-            </div>
-          </el-form-item>
-        </template>
+        <div class="mt-4 mb-2 font-bold">API 密钥信息</div>
+        <div class="form-tip text-gray-400 text-xs mb-4">
+          前往 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank" class="text-info">腾讯云API密钥管理</a> 获取您的 SecretId 和 SecretKey。建议使用子用户账号，仅授予COS相关权限。
+        </div>
+
+        <el-form-item label="SecretId" prop="config.secretId">
+          <el-input v-model="form.config.secretId" placeholder="请输入 SecretId" />
+          <div class="form-tip text-gray-400 text-xs mt-1">
+            腾讯云API访问密钥 SecretId。
+          </div>
+        </el-form-item>
+
+        <el-form-item label="SecretKey" prop="config.secretKey">
+          <el-input v-model="form.config.secretKey" type="password" show-password placeholder="请输入 SecretKey" />
+          <div class="form-tip text-gray-400 text-xs mt-1">
+            腾讯云API访问密钥 SecretKey。
+          </div>
+        </el-form-item>
 
         <div class="mt-4 mb-2 font-bold">高级配置</div>
           
@@ -211,6 +161,18 @@
             <div class="upload-type-box">
               <div class="font-bold mb-1">客户端直传</div>
               <div class="text-xs text-gray-500">客户端直接上传到腾讯云COS，减少服务器带宽压力，提升上传效率</div>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="单文件大小限制" prop="maxSize">
+            <el-input 
+              v-model.number="form.maxSize" 
+              placeholder="请输入字节大小"
+            >
+              <template #append>字节</template>
+            </el-input>
+            <div class="form-tip text-gray-400 text-xs mt-1">
+              单个文件的最大大小限制（字节）。默认 10485760 字节（10MB）。
             </div>
           </el-form-item>
 
@@ -317,23 +279,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { type FormInstance, type FormRules, ElMessage } from 'element-plus'
-import { getCloudConfigs, getCloudBuckets } from '@/api/cloud-config'
-import { createStorageStrategy, updateStorageStrategy } from '@/api/storage-strategy'
+import { createStorageStrategy } from '@/api/storage-strategy'
 
 const props = defineProps<{
   visible: boolean
-  editData?: any
 }>()
 
 const emit = defineEmits(['update:visible', 'submit'])
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
-const isEdit = computed(() => !!props.editData)
-
-const credentialOptions = ref<any[]>([])
+const loading = ref(false)
 
 const form = reactive({
   id: 0,
@@ -343,8 +301,7 @@ const form = reactive({
   maxSize: 10485760,
   status: 'active',
   config: {
-    mode: 'manual',
-    credentialId: '',
+    // 默认值
     bucket: '',
     region: '',
     secretId: '',
@@ -377,116 +334,35 @@ const rules = reactive<FormRules>({
   path: [{ required: true, validator: validatePath, trigger: 'blur' }]
 })
 
+const resetConfig = () => {
+  form.config = {
+    bucket: '',
+    region: '',
+    secretId: '',
+    secretKey: '',
+    domain: '',
+    cdnDomain: '',
+    root: '',
+    acl: 'public-read',
+    uploadType: 'direct',
+    styleSeparator: '!',
+    visitStyle: ''
+  }
+}
+
 // 初始化表单
 watch(() => props.visible, (val) => {
   if (val) {
-    if (props.editData) {
-      Object.assign(form, props.editData)
-      // 如果没有mode字段，默认为手动
-      if (!form.config.mode) {
-        form.config.mode = 'manual'
-      }
-    } else {
-      Object.assign(form, {
-        id: 0,
-        name: '',
-        type: 'local',
-        path: '',
-        maxSize: 10485760,
-        status: 'active',
-        config: {
-          mode: 'manual',
-          credentialId: '',
-          bucket: '',
-          region: '',
-          secretId: '',
-          secretKey: '',
-          domain: '',
-          cdnDomain: '',
-          root: '',
-          acl: 'public-read',
-          uploadType: 'direct',
-          styleSeparator: '!',
-          visitStyle: ''
-        }
-      })
-    }
+    // 新增模式，重置表单
+    form.id = 0
+    form.name = ''
+    form.type = 'local'
+    form.path = ''
+    form.maxSize = 10485760
+    form.status = 'active'
+    resetConfig()
   }
 })
-
-const handleModeChange = async (val: string) => {
-  if (val === 'auto' && credentialOptions.value.length === 0) {
-    await fetchCredentials()
-  }
-}
-
-const fetchCredentials = async () => {
-  try {
-    const res: any = await getCloudConfigs({
-      page: 1,
-      pageSize: 100,
-      provider: 'Tencent' // 目前只处理腾讯云
-    })
-    
-    credentialOptions.value = res.list
-      .filter((item: any) => item.status === 'active' || item.status === 'connected')
-      .map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        // 保存完整配置以便自动填充（如果需要）
-        fullConfig: item
-      }))
-      
-    if (credentialOptions.value.length === 0) {
-      ElMessage.warning('未找到可用的腾讯云凭证')
-    }
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('获取云凭证失败')
-  }
-}
-
-const bucketOptions = ref<any[]>([])
-
-const handleCredentialChange = async (val: number) => {
-  const selectedCredential = credentialOptions.value.find(item => item.id === val)
-  if (selectedCredential && selectedCredential.fullConfig) {
-    const config = selectedCredential.fullConfig
-    // 自动填充 SecretId 和 SecretKey
-    form.config.secretId = config.accessKey || config.config?.accessKey || ''
-    form.config.secretKey = config.secretKey || config.config?.secretKey || ''
-    
-    // 填充其他默认值
-    form.config.styleSeparator = '!'
-    form.config.visitStyle = ''
-
-    // 清空存储桶选择
-    form.config.bucket = ''
-    form.config.domain = ''
-    form.config.cdnDomain = ''
-    bucketOptions.value = []
-    
-    // 获取存储桶列表
-    try {
-      const res: any = await getCloudBuckets(val)
-      bucketOptions.value = res.list
-      if (bucketOptions.value.length === 0) {
-        ElMessage.warning('该凭证下未找到存储桶')
-      }
-    } catch (error) {
-      console.error(error)
-      ElMessage.error('获取存储桶列表失败')
-    }
-  }
-}
-
-const handleBucketChange = (val: string) => {
-  const selectedBucket = bucketOptions.value.find(item => item.name === val)
-  if (selectedBucket) {
-    form.config.domain = selectedBucket.domain
-    form.config.region = selectedBucket.region
-  }
-}
 
 const handleSubmit = async () => {
   if (!formRef.value) return
@@ -495,12 +371,8 @@ const handleSubmit = async () => {
     if (valid) {
       submitting.value = true
       try {
-        if (isEdit.value) {
-          await updateStorageStrategy(form.id, form)
-        } else {
-          await createStorageStrategy(form)
-        }
-        ElMessage.success('保存成功')
+        await createStorageStrategy(form)
+        ElMessage.success('添加成功')
         emit('submit')
         emit('update:visible', false)
       } catch (error) {

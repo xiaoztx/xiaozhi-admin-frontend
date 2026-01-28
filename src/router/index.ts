@@ -59,6 +59,12 @@ const router = createRouter({
           meta: { title: '对象存储管理' }
         },
         {
+          path: 'oss/edit/:id',
+          name: 'oss-edit',
+          component: () => import('@/views/oss/EditStorageStrategy.vue'),
+          meta: { title: '编辑存储策略', hidden: true }
+        },
+        {
           path: 'github/account',
           name: 'github-account',
           component: () => import('@/views/github/GitHubAccount.vue'),
