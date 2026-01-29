@@ -3,9 +3,9 @@
     <div class="chart-header">
       <span>近 1 小时监控数据</span>
       <el-radio-group v-model="timeRange" size="small">
-        <el-radio-button label="1h">1小时</el-radio-button>
-        <el-radio-button label="6h">6小时</el-radio-button>
-        <el-radio-button label="24h">24小时</el-radio-button>
+        <el-radio-button value="1h">1小时</el-radio-button>
+        <el-radio-button value="6h">6小时</el-radio-button>
+        <el-radio-button value="24h">24小时</el-radio-button>
       </el-radio-group>
     </div>
     <el-row :gutter="20">
@@ -50,23 +50,29 @@ const metrics = [
     align-items: center;
     margin-bottom: 24px;
     font-size: 14px;
-    color: #606266;
+    color: var(--el-text-color-regular);
   }
   
   .metric-chart-box {
-    background: #fff;
-    border: 1px solid #ebeef5;
+    background: var(--el-bg-color-overlay);
+    border: 1px solid var(--el-border-color-lighter);
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s;
     
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
     .chart-title {
       display: flex;
       align-items: center;
       gap: 8px;
       font-weight: 500;
       margin-bottom: 20px;
+      color: var(--el-text-color-primary);
       
       .dot {
         width: 8px;
@@ -100,6 +106,11 @@ const metrics = [
         }
       }
     }
+  }
+
+  :global(html.dark) .metric-chart-box {
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-darker);
   }
 }
 </style>

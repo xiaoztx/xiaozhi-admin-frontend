@@ -11,9 +11,11 @@ export interface CloudServer {
   os_name: string
   cpu: number
   memory: number
+  bandwidth: number
   status: string
   expired_at: string
   created_at: string
+  start_time: string
 }
 
 export interface ServerListResponse {
