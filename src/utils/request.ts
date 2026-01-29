@@ -1,6 +1,13 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+// 扩展 axios 类型以支持自定义响应结构
+declare module 'axios' {
+  interface AxiosResponse<T = any> {
+    data: T;
+  }
+}
+
 const service = axios.create({
   baseURL: '/api/v1', // 使用 Vite 代理，配合 vite.config.ts 中的 /api rewrite
   timeout: 10000

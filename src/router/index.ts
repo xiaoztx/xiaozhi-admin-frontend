@@ -65,6 +65,12 @@ const router = createRouter({
           meta: { title: '云服务器' }
         },
         {
+          path: 'cloud/ecs/:id',
+          name: 'ecs-detail',
+          component: () => import('@/views/cloud/ECSDetail.vue'),
+          meta: { title: '服务器详情' }
+        },
+        {
           path: 'cloud/cdn',
           name: 'cdn',
           component: () => import('@/views/cloud/CDN.vue'),
