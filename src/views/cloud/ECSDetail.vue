@@ -125,7 +125,7 @@
             </div>
           </el-descriptions-item>
           <el-descriptions-item label="计费方式">按量付费</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatDate(server?.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDate(server?.start_time || server?.created_at) }}</el-descriptions-item>
           <el-descriptions-item label="到期时间">
             <span class="danger-text">{{ formatDate(server?.expired_at) }}</span>
           </el-descriptions-item>
