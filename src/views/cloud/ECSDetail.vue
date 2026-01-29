@@ -8,6 +8,9 @@
           <el-tag :type="getStatusType(server?.status || '')" effect="dark" round class="status-tag">
             {{ getStatusLabel(server?.status || '') }}
           </el-tag>
+          <el-tag effect="plain" round class="provider-tag">
+            {{ getProviderLabel(server?.cloud_config?.provider) }}
+          </el-tag>
         </div>
       </template>
       <template #extra>
@@ -155,7 +158,7 @@
           
           <el-tab-pane label="远程终端" name="terminal" lazy>
              <div class="tab-pane-content terminal-wrapper">
-                <ServerTerminal :server-id="serverId" />
+                <ServerTerminal ref="terminalRef" :server-id="serverId" />
              </div>
           </el-tab-pane>
 
@@ -214,9 +217,21 @@ const serverId = Number(route.params.id)
 const server = ref<CloudServer>()
 const loading = ref(false)
 const activeTab = ref('monitor')
+const terminalRef = ref()
 
 // 复用 Hook
 const { handleServerAction } = useServerAction(() => loadData())
+
+// 监听 Tab 切换，自动填充 IP
+import { watch } from 'vue'
+watch(activeTab, (val) => {
+  if (val === 'terminal' && server.value?.public_ip) {
+    // 稍微延迟一下，确保组件已挂载
+    setTimeout(() => {
+      terminalRef.value?.setServerInfo(server.value?.public_ip)
+    }, 100)
+  }
+})
 
 // 计算属性
 const runDays = computed(() => {
@@ -264,6 +279,18 @@ const getStatusLabel = (status: string) => {
   return SERVER_STATUS_MAP[status]?.label || status
 }
 
+const getProviderLabel = (provider?: string) => {
+  if (!provider) return '未知'
+  const map: Record<string, string> = {
+    'aliyun': '阿里云',
+    'tencent': '腾讯云',
+    'cloudflare': 'Cloudflare'
+  }
+  // 忽略大小写进行匹配
+  const key = provider.toLowerCase()
+  return map[key] || provider
+}
+
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString()
@@ -292,6 +319,14 @@ onMounted(() => {
       font-size: 20px;
       font-weight: 600;
       color: var(--text-primary);
+    }
+
+    .provider-tag {
+      margin-left: 8px;
+      font-weight: 500;
+      background-color: var(--bg-secondary);
+      border-color: var(--border-light);
+      color: var(--text-secondary);
     }
   }
   

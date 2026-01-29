@@ -23,8 +23,8 @@
           <el-input v-model="queryParams.keyword" placeholder="实例名称/IP/ID" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 140px">
-             <el-option v-for="(cfg, key) in SERVER_STATUS_MAP" :key="key" :label="cfg.label" :value="key" />
+          <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 140px" @change="handleSearch">
+            <el-option v-for="(cfg, key) in SERVER_STATUS_MAP" :key="key" :label="cfg.label" :value="key" />
           </el-select>
         </el-form-item>
         <el-form-item>

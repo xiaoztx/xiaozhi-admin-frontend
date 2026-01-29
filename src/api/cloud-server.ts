@@ -16,6 +16,10 @@ export interface CloudServer {
   expired_at: string
   created_at: string
   start_time: string
+  cloud_config?: {
+    provider: string
+    name: string
+  }
 }
 
 export interface ServerListResponse {

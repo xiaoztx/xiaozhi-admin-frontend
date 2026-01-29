@@ -13,25 +13,29 @@
     </el-alert>
 
     <div class="table-actions">
-      <el-button type="primary" size="small" @click="handleAddRule">添加规则</el-button>
-      <el-button size="small" @click="handleImportRule">导入规则</el-button>
-      <el-button size="small" @click="handleOneClickAllow">一键放通</el-button>
-      <el-button 
-        size="small" 
-        :type="selectedRules.length > 0 ? 'danger' : ''"
-        :disabled="selectedRules.length === 0"
-        @click="handleBatchDelete"
-      >
-        删除
-      </el-button>
-      <el-button size="small" @click="toggleSortMode">{{ isSortMode ? '保存排序' : '排序' }}</el-button>
-      <span class="divider"></span>
-      <span class="info-text">设置多台实例的防火墙?</span>
+      <template v-if="!isSortMode">
+        <el-button type="primary" size="small" @click="handleAddRule">添加规则</el-button>
+        <el-button size="small" @click="handleImportRule">导入规则</el-button>
+        <el-button size="small" @click="handleOneClickAllow">一键放通</el-button>
+        <el-button 
+          size="small" 
+          :type="selectedRules.length > 0 ? 'danger' : ''"
+          :disabled="selectedRules.length === 0"
+          @click="handleBatchDelete"
+        >
+          删除
+        </el-button>
+        <el-button size="small" @click="toggleSortMode">排序</el-button>
+      </template>
+      <template v-else>
+        <el-button type="primary" size="small" @click="toggleSortMode">保存</el-button>
+        <el-button size="small" @click="cancelSortMode">取消</el-button>
+      </template>
     </div>
 
     <el-table 
       ref="tableRef"
-      :data="rulesWithKey" 
+      :data="paginatedRules" 
       style="width: 100%" 
       class="security-table" 
       v-loading="loading"
@@ -39,6 +43,11 @@
       row-key="uniqueKey"
     >
       <el-table-column type="selection" width="55" />
+      <el-table-column v-if="isSortMode" width="40" align="center">
+         <template #default>
+           <el-icon class="sort-handle"><Rank /></el-icon>
+         </template>
+      </el-table-column>
       <el-table-column prop="appType" label="应用类型" width="180">
         <template #default="{ row }">
           {{ getAppType(row) }}
@@ -88,10 +97,40 @@
       <el-table-column label="操作" width="150" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button link type="primary" size="small" @click="handleDelete(row)">删除</el-button>
+          
+          <el-tooltip 
+            v-if="isSortMode" 
+            content="排序中" 
+            placement="top"
+          >
+            <span>
+              <el-button link type="danger" size="small" disabled>删除</el-button>
+            </span>
+          </el-tooltip>
+          <el-button 
+            v-else 
+            link 
+            type="danger" 
+            size="small" 
+            @click="handleDelete(row)"
+          >
+            删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-container" v-if="rules.length > 0">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="rules.length"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
    </div>
 
    <AddRuleDialog 
@@ -108,7 +147,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { QuestionFilled } from '@element-plus/icons-vue'
+import { QuestionFilled, Rank } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AddRuleDialog from './AddRuleDialog.vue'
@@ -124,6 +163,8 @@ const importDialogVisible = ref(false)
 const isSortMode = ref(false)
 const tableRef = ref()
 const editRuleData = ref<any>(null) // 用于编辑的数据
+const currentPage = ref(1)
+const pageSize = ref(10)
 let sortableInstance: any = null
 
 // 为每一行生成唯一 key，防止排序或操作时组件复用问题
@@ -133,6 +174,21 @@ const rulesWithKey = computed(() => {
     uniqueKey: `${r.ip_protocol}-${r.port_range}-${r.source_cidr}-${index}`
   }))
 })
+
+const paginatedRules = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return rulesWithKey.value.slice(start, end)
+})
+
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+}
 
 // 常见的端口应用类型映射
 const getAppType = (row: any) => {
@@ -190,16 +246,43 @@ const handleImportRule = () => {
   importDialogVisible.value = true
 }
 
-const handleImportSubmit = async (rulesToImport: any[]) => {
+const handleImportSubmit = async (data: any) => {
   const id = route.params.id
+  // 兼容直接传数组的情况
+  const rulesToImport = Array.isArray(data) ? data : data.rules
+  const mode = data.mode || 'append'
+
+  loading.value = true
   try {
+    // 如果是覆盖模式，先清空现有规则
+    if (mode === 'overwrite') {
+      // 确保获取最新规则列表
+      if (rules.value.length > 0) {
+        // 循环删除所有规则
+        for (const rule of rules.value) {
+          await request({
+            url: `/servers/${id}/security-rules`,
+            method: 'delete',
+            data: rule
+          })
+        }
+      }
+    }
+
+    // 批量添加新规则
     await request.post(`/servers/${id}/security-rules/batch-add`, rulesToImport)
-    ElMessage.success(`成功导入 ${rulesToImport.length} 条规则`)
+    
+    ElMessage.success(mode === 'overwrite' 
+      ? `覆盖导入成功，共 ${rulesToImport.length} 条规则`
+      : `追加导入成功，新增 ${rulesToImport.length} 条规则`
+    )
     importDialogVisible.value = false
     fetchRules()
   } catch (error) {
     console.error(error)
     ElMessage.error('导入规则失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -343,16 +426,28 @@ const toggleSortMode = () => {
   }
 }
 
+const cancelSortMode = () => {
+  isSortMode.value = false
+  destroySortable()
+  fetchRules() // 重新获取数据以恢复排序前状态
+  ElMessage.info('已取消排序')
+}
+
 const initSortable = () => {
   const el = tableRef.value.$el.querySelector('.el-table__body-wrapper tbody')
   if (!el) return
   
   sortableInstance = Sortable.create(el, {
     animation: 150,
-    handle: 'tr', // 整行可拖拽
+    handle: '.sort-handle', // 限制只有点击该图标才能拖拽
     onEnd: ({ newIndex, oldIndex }: any) => {
-       const currRow = rules.value.splice(oldIndex, 1)[0]
-       rules.value.splice(newIndex, 0, currRow)
+       // 计算实际的索引位置（考虑分页）
+       const pageOffset = (currentPage.value - 1) * pageSize.value
+       const realOldIndex = pageOffset + oldIndex
+       const realNewIndex = pageOffset + newIndex
+
+       const currRow = rules.value.splice(realOldIndex, 1)[0]
+       rules.value.splice(realNewIndex, 0, currRow)
     }
   })
 }
@@ -401,26 +496,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  
-  .divider {
-    display: inline-block;
-    width: 1px;
-    height: 14px;
-    background-color: var(--border-light);
-    margin: 0 8px;
-  }
-  
-  .info-text {
-    font-size: 13px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-bottom: 1px dashed var(--text-secondary);
-    
-    &:hover {
-      color: var(--el-color-primary);
-      border-color: var(--el-color-primary);
-    }
-  }
 }
 
 .text-success {
@@ -469,6 +544,23 @@ onMounted(() => {
     &:last-child {
       margin-right: 0;
     }
+  }
+}
+
+.pagination-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sort-handle {
+  cursor: grab;
+  color: #909399;
+  font-size: 16px;
+  
+  &:active {
+    cursor: grabbing;
+    color: var(--el-color-primary);
   }
 }
 </style>

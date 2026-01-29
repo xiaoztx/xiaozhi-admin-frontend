@@ -16,6 +16,10 @@
           
           <div class="card-body">
             <div class="info-item">
+              <span class="label">云服务商:</span>
+              <span class="value">{{ getProviderLabel(server.cloud_config?.provider) }}</span>
+            </div>
+            <div class="info-item">
               <span class="label">公网 IP:</span>
               <span class="value copyable" @click="copyText(server.public_ip)">
                 {{ server.public_ip }}
@@ -102,6 +106,17 @@ const getStatusType = (status: string) => {
 
 const getStatusLabel = (status: string) => {
   return SERVER_STATUS_MAP[status]?.label || status
+}
+
+const getProviderLabel = (provider?: string) => {
+  if (!provider) return '未知'
+  const map: Record<string, string> = {
+    'aliyun': '阿里云',
+    'tencent': '腾讯云',
+    'cloudflare': 'Cloudflare'
+  }
+  const key = provider.toLowerCase()
+  return map[key] || provider
 }
 
 const isExpiringSoon = (dateStr?: string) => {

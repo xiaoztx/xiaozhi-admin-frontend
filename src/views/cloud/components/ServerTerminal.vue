@@ -25,18 +25,18 @@
 
     <!-- 连接信息对话框 -->
     <el-dialog v-model="dialogVisible" title="SSH 连接信息" width="400px" append-to-body>
-      <el-form :model="form" label-width="80px">
+      <el-form :model="form" label-width="80px" @submit.prevent>
         <el-form-item label="主机 IP">
-          <el-input v-model="form.ip" placeholder="请输入公网IP" />
+          <el-input v-model="form.ip" placeholder="请输入公网IP" @keyup.enter="connectReal" />
         </el-form-item>
         <el-form-item label="端口">
-          <el-input v-model="form.port" placeholder="22" />
+          <el-input v-model="form.port" placeholder="22" @keyup.enter="connectReal" />
         </el-form-item>
         <el-form-item label="用户名">
-          <el-input v-model="form.user" placeholder="root" />
+          <el-input v-model="form.user" placeholder="root" @keyup.enter="connectReal" />
         </el-form-item>
         <el-form-item label="密码">
-          <el-input v-model="form.password" type="password" show-password placeholder="请输入SSH密码" />
+          <el-input v-model="form.password" type="password" show-password placeholder="请输入SSH密码" @keyup.enter="connectReal" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -75,7 +75,12 @@ const form = reactive({
   password: ''
 })
 
-// 暴露一个方法供父组件调用以预填IP
+const props = defineProps<{
+  serverId?: number
+}>()
+
+// 监听 serverId 或其他方式获取服务器信息（如果需要自动填充）
+// 但更直接的方式是暴露方法给父组件调用
 const setServerInfo = (ip: string) => {
   form.ip = ip
 }
