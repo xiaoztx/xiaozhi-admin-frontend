@@ -41,11 +41,32 @@ const mockRules = [
 }
 
 .code-bg {
-  background: #f4f4f5;
+  background: var(--bg-tertiary);
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
+}
+
+:deep(.el-table) {
+  --el-table-header-bg-color: var(--bg-tertiary);
+  --el-table-row-hover-bg-color: var(--bg-tertiary);
+  --el-table-border-color: var(--border-light);
+  background-color: transparent;
+  
+  th.el-table__cell {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  
+  tr {
+    background-color: transparent;
+  }
+  
+  td.el-table__cell {
+    border-bottom: 1px solid var(--border-light);
+  }
 }
 </style>

@@ -120,54 +120,91 @@ const formatDate = (dateStr?: string) => {
 <style scoped lang="scss">
 .server-card {
   margin-bottom: 20px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
   
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
   }
 
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
     
     .server-name {
-      font-weight: bold;
+      font-weight: 600;
+      font-size: 15px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      max-width: 180px;
+      flex: 1; /* Allow taking available space */
+      min-width: 0; /* Enable flex item shrinking */
+      margin-right: 8px; /* Add spacing between name and tag */
       cursor: pointer;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
+      transition: color 0.2s;
+      
+      &:hover {
+        color: var(--color-primary);
+      }
     }
   }
   
   .card-body {
-    font-size: 13px;
-    color: var(--el-text-color-regular);
-    margin-bottom: 16px;
+    padding: 20px;
+    font-size: 14px;
+    color: var(--text-secondary);
     
     .info-item {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      line-height: 1.5;
       
-      .label { color: var(--el-text-color-secondary); }
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .label { 
+        color: var(--text-tertiary); 
+        font-weight: 500;
+      }
+      
       .value { 
-        font-family: monospace; 
-        &.copyable { cursor: pointer; &:hover { color: var(--el-color-primary); } }
-        &.text-danger { color: var(--el-color-danger); font-weight: bold; }
+        font-family: 'JetBrains Mono', monospace; 
+        color: var(--text-primary);
+        font-weight: 500;
+        
+        &.copyable { 
+          cursor: pointer; 
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: color 0.2s;
+          
+          &:hover { color: var(--color-primary); } 
+        }
+        &.text-danger { color: var(--color-danger); }
       }
     }
   }
   
   .card-footer {
-    border-top: 1px solid var(--el-border-color-lighter);
-    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+    background-color: var(--bg-secondary);
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
+    padding: 0;
     
     .el-button-group {
       width: 100%;
@@ -176,31 +213,27 @@ const formatDate = (dateStr?: string) => {
       .el-button {
         flex: 1;
         border: none;
-        border-right: 1px solid var(--el-border-color-lighter);
+        border-right: 1px solid var(--border-light);
         border-radius: 0;
         margin: 0;
+        height: 44px;
+        background: transparent;
+        color: var(--text-secondary);
+        transition: all 0.2s;
         
         &:last-child {
           border-right: none;
         }
         
-        &:not(:first-child):not(:last-child) {
-          border-radius: 0;
-        }
-        
-        &:first-child {
-          border-top-left-radius: 0;
-          border-bottom-left-radius: 4px;
-        }
-        
-        &:last-child {
-          border-top-right-radius: 0;
-          border-bottom-right-radius: 4px;
-        }
-        
         &:hover {
-          background-color: var(--el-color-primary-light-9);
-          color: var(--el-color-primary);
+          background-color: var(--bg-tertiary);
+          color: var(--color-primary);
+        }
+        
+        &.is-disabled {
+          color: var(--text-disabled);
+          background-color: transparent;
+          cursor: not-allowed;
         }
       }
     }
@@ -211,11 +244,11 @@ const formatDate = (dateStr?: string) => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--el-text-color-secondary);
+  background-color: var(--text-secondary);
   
-  &.running { background-color: var(--el-color-success); box-shadow: 0 0 4px var(--el-color-success); }
-  &.stopped { background-color: var(--el-text-color-secondary); }
-  &.starting, &.stopping { background-color: var(--el-color-warning); animation: breathe 1.5s infinite; }
+  &.running { background-color: var(--color-success); box-shadow: 0 0 4px var(--color-success); }
+  &.stopped { background-color: var(--text-secondary); }
+  &.starting, &.stopping { background-color: var(--color-warning); animation: breathe 1.5s infinite; }
 }
 
 @keyframes breathe {

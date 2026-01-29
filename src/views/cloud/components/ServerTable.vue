@@ -149,24 +149,24 @@ const formatDate = (dateStr?: string) => {
 
 <style scoped lang="scss">
 .server-table {
-  background: #fff;
+  background: var(--bg-surface);
   padding: 20px;
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-sm);
   
   .table-name-cell {
     display: flex;
     flex-direction: column;
     
     .link-text {
-      color: var(--el-color-primary);
+      color: var(--color-primary);
       cursor: pointer;
       font-weight: 500;
       &:hover { text-decoration: underline; }
     }
     .sub-text {
       font-size: 12px;
-      color: var(--el-text-color-secondary);
+      color: var(--text-secondary);
       font-family: monospace;
     }
   }
@@ -176,18 +176,18 @@ const formatDate = (dateStr?: string) => {
     font-size: 13px;
     
     .label {
-      color: var(--el-text-color-placeholder);
+      color: var(--text-tertiary);
       margin-right: 4px;
     }
     
     .sub-text {
-      color: var(--el-text-color-secondary);
+      color: var(--text-secondary);
       margin-top: 2px;
     }
     
     .copy-icon {
       cursor: pointer;
-      color: var(--el-color-primary);
+      color: var(--color-primary);
       margin-left: 4px;
       vertical-align: middle;
       &:hover { opacity: 0.8; }
@@ -195,7 +195,7 @@ const formatDate = (dateStr?: string) => {
   }
 
   .text-danger {
-    color: var(--el-color-danger);
+    color: var(--color-danger);
     font-weight: 500;
   }
 }

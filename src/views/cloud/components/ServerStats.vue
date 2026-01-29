@@ -90,37 +90,46 @@ const stats = computed(() => {
   margin-bottom: 20px;
   
   .stat-card {
-    border: none;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
-    transition: transform 0.3s;
+    border: 1px solid var(--border-primary);
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius-lg);
     
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-primary);
     }
     
     :deep(.el-card__body) {
-      padding: 20px;
+      padding: 24px;
     }
   }
 
   .stat-item {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     
     .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      font-size: 28px;
+      transition: transform 0.3s;
       
-      &.running { background: var(--el-color-success-light-9); color: var(--el-color-success); }
-      &.cpu { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
-      &.memory { background: var(--el-color-warning-light-9); color: var(--el-color-warning); }
-      &.expire { background: var(--el-color-danger-light-9); color: var(--el-color-danger); }
+      &.running { background: var(--bg-success-light); color: var(--color-success); }
+      &.cpu { background: var(--bg-primary-light); color: var(--color-primary); }
+      &.memory { background: var(--bg-warning-light); color: var(--color-warning); }
+      &.expire { background: var(--bg-danger-light); color: var(--color-danger); }
+    }
+    
+    .stat-card:hover .stat-icon {
+      transform: scale(1.1);
     }
     
     .stat-info {
@@ -128,27 +137,30 @@ const stats = computed(() => {
       text-align: left;
       
       .stat-label {
-        font-size: 13px;
-        color: var(--el-text-color-secondary);
-        margin-bottom: 4px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        font-weight: 500;
       }
       
       .stat-value {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--el-text-color-primary);
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
         line-height: 1.2;
+        letter-spacing: -0.5px;
         
-        &.danger { color: var(--el-color-danger); }
+        &.danger { color: var(--color-danger); }
         
         .highlight {
-          color: var(--el-color-success);
+          color: var(--color-success);
         }
         
         .divider {
-          margin: 0 4px;
-          font-size: 14px;
-          color: var(--el-text-color-placeholder);
+          margin: 0 6px;
+          font-size: 16px;
+          color: var(--text-disabled);
+          font-weight: 400;
         }
       }
     }

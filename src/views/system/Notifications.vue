@@ -317,9 +317,9 @@ const saveSettings = () => {
         .el-icon {
           font-size: 18px;
           
-          &.icon-security { color: #f59e0b; }
-          &.icon-system { color: #3b82f6; }
-          &.icon-github { color: #24292e; }
+          &.icon-security { color: var(--color-warning); }
+          &.icon-system { color: var(--color-primary); }
+          &.icon-github { color: var(--text-primary); }
         }
       }
 
@@ -409,9 +409,9 @@ const saveSettings = () => {
       font-size: 16px;
       margin-bottom: 2px;
       
-      &.security { color: #f59e0b; }
-      &.system { color: #3b82f6; }
-      &.github { color: #24292e; }
+      &.security { color: var(--color-warning); }
+      &.system { color: var(--color-primary); }
+      &.github { color: var(--text-primary); }
     }
   }
 
@@ -480,33 +480,20 @@ const saveSettings = () => {
 
     // 类型颜色定义
     &.type-security .item-icon {
-      background: linear-gradient(135deg, #fff7ed, #ffedd5);
-      color: #ea580c;
+      background: var(--bg-warning-light);
+      color: var(--color-warning);
     }
     &.type-system .item-icon {
-      background: linear-gradient(135deg, #eff6ff, #dbeafe);
-      color: #2563eb;
+      background: var(--bg-primary-light);
+      color: var(--color-primary);
     }
     &.type-github .item-icon {
-      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-      color: #1f2937;
+      background: var(--bg-info-light);
+      color: var(--text-primary);
     }
 
     // 暗色模式适配
-    :global(.dark) & {
-      &.type-security .item-icon {
-        background: rgba(234, 88, 12, 0.15);
-        color: #fb923c;
-      }
-      &.type-system .item-icon {
-        background: rgba(37, 99, 235, 0.15);
-        color: #60a5fa;
-      }
-      &.type-github .item-icon {
-        background: rgba(255, 255, 255, 0.1);
-        color: #e5e7eb;
-      }
-    }
+    // Removed explicit dark mode blocks as variables handle it
 
     .item-content {
       flex: 1;

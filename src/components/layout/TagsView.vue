@@ -286,9 +286,11 @@ watch(
   width: 100%;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.04); // 增强底部阴影
   display: flex;
   align-items: center;
+  position: relative;
+  z-index: 99; // 确保阴影在内容之上
 
   .tags-view-wrapper {
     flex: 1; // 占据剩余空间
@@ -410,26 +412,6 @@ watch(
         background: var(--bg-tertiary);
         color: var(--color-primary);
       }
-    }
-  }
-}
-
-// 暗色模式微调
-:global(.dark) {
-  .tags-view-item {
-    &.active {
-      background-color: #2b2d31 !important; // 深色卡片背景
-      border-color: rgba(255, 255, 255, 0.1) !important;
-      color: #fff !important;
-    }
-
-    &:hover:not(.active) {
-      background-color: rgba(255, 255, 255, 0.05) !important;
-    }
-
-    .el-icon-close:hover {
-      background-color: rgba(255, 255, 255, 0.2) !important;
-      color: #fff !important;
     }
   }
 }

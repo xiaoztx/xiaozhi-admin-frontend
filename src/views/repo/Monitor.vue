@@ -55,7 +55,7 @@
                             >
                               <div 
                                 class="day-cell"
-                                :style="{ backgroundColor: day.color || '#ebedf0' }"
+                                :style="{ backgroundColor: day.color || 'var(--bg-tertiary)' }"
                               ></div>
                             </el-tooltip>
                           </div>
@@ -532,42 +532,26 @@ onMounted(() => {
     background: var(--bg-primary);
     
     .repo-card {
-      border: 1px solid #e2e8f0; /* 明确的浅灰边框 */
+      border: 1px solid var(--border-color); /* 明确的浅灰边框 */
       border-radius: 12px;
-      background: #f8fafc; /* 极浅的蓝灰色背景，与纯白区分 */
+      background: var(--bg-secondary); /* 极浅的蓝灰色背景，与纯白区分 */
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       height: 100%;
       
-      .dark & {
-        background: #0f172a;
-        border-color: #334155;
-      }
-      
       &:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.12);
-        background: #fff; /* 悬浮时变回纯白，增加亮度对比 */
+        box-shadow: var(--shadow-lg);
+        background: var(--bg-primary); /* 悬浮时变回纯白，增加亮度对比 */
         border-color: var(--color-primary);
-        
-        .dark & {
-          background: #1e293b;
-          border-color: var(--color-primary);
-          box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
-        }
       }
       
       .repo-header {
         padding: 16px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-        background: #fff; /* 头部保持纯白 */
-        
-        .dark & {
-          background: #1e293b; /* 头部夜间模式 */
-          border-bottom-color: rgba(255, 255, 255, 0.05);
-        }
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-primary); /* 头部保持纯白 */
         
         .header-content {
           display: flex;
@@ -576,13 +560,8 @@ onMounted(() => {
           
           .repo-avatar {
             border: 1px solid var(--border-color-lighter);
-            background: #fff;
+            background: var(--bg-primary);
             border-radius: 10px;
-            
-            .dark & {
-              background: #0f172a;
-              border-color: #334155;
-            }
           }
           
           .repo-info {
@@ -602,10 +581,6 @@ onMounted(() => {
               transition: color 0.2s;
               font-family: 'DM Sans', sans-serif;
               
-              .dark & {
-                color: #e2e8f0;
-              }
-              
               &:hover {
                 color: var(--color-primary);
               }
@@ -620,13 +595,13 @@ onMounted(() => {
                 width: 6px;
                 height: 6px;
                 border-radius: 50%;
-                background-color: #10B981;
-                box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+                background-color: var(--color-success);
+                box-shadow: 0 0 0 2px var(--bg-success-light);
               }
               
               .status-text {
                 font-size: 11px;
-                color: #10B981;
+                color: var(--color-success);
                 font-weight: 500;
               }
             }
@@ -657,10 +632,6 @@ onMounted(() => {
               letter-spacing: 0.5px;
               color: var(--text-secondary);
               font-weight: 600;
-              
-              .dark & {
-                color: #94a3b8;
-              }
             }
             
             .value-row {
@@ -670,10 +641,6 @@ onMounted(() => {
               font-size: 13px;
               color: var(--text-primary);
               font-weight: 500;
-              
-              .dark & {
-                color: #e2e8f0;
-              }
               
               .author {
                 font-size: 12px;
@@ -706,11 +673,6 @@ onMounted(() => {
                   font-weight: 600;
                   background: transparent;
                   border: 1px solid var(--border-color);
-                  
-                  .dark & {
-                    color: #cbd5e1;
-                    border-color: #475569;
-                  }
                 }
               }
             }
@@ -728,10 +690,6 @@ onMounted(() => {
             letter-spacing: 0.5px;
             color: var(--text-secondary);
             font-weight: 600;
-            
-            .dark & {
-              color: #94a3b8;
-            }
           }
           
           .contributors-list {
@@ -742,17 +700,12 @@ onMounted(() => {
             .contributor-avatar {
               width: 26px;
               height: 26px;
-              border: 2px solid #fff;
+              border: 2px solid var(--bg-primary);
               border-radius: 50%;
               margin-left: -8px;
               transition: transform 0.2s, z-index 0.2s;
               position: relative;
               background: var(--bg-tertiary);
-              
-              .dark & {
-                border-color: #1e293b;
-                background: #0f172a;
-              }
               
               &:hover {
                 transform: translateY(-2px) scale(1.1);
@@ -765,10 +718,6 @@ onMounted(() => {
               color: var(--text-secondary);
               margin-left: 6px;
               font-weight: 500;
-              
-              .dark & {
-                color: #94a3b8;
-              }
             }
           }
         }
@@ -776,16 +725,11 @@ onMounted(() => {
       
       .repo-footer {
         padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.5); /* 底部半透明 */
-        border-top: 1px solid rgba(0, 0, 0, 0.04);
+        background: var(--bg-tertiary); /* 底部半透明 */
+        border-top: 1px solid var(--border-light);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        
-        .dark & {
-          background: rgba(15, 23, 42, 0.5);
-          border-top-color: rgba(255, 255, 255, 0.05);
-        }
         
         .stats-row {
           display: flex;
@@ -1026,21 +970,12 @@ onMounted(() => {
       padding: 16px 24px;
       margin: 0;
       border-bottom: 1px solid var(--border-color-lighter);
-      background: #fff;
-      
-      .dark & {
-        background: #1e293b;
-        border-color: #334155;
-      }
+      background: var(--bg-primary);
       
       .el-dialog__title {
         font-weight: 600;
         font-size: 16px;
         color: var(--text-primary);
-        
-        .dark & {
-          color: #f1f5f9;
-        }
       }
       
       .el-dialog__headerbtn {
@@ -1050,11 +985,7 @@ onMounted(() => {
     
     :deep(.el-dialog__body) {
       padding: 0;
-      background: #fff;
-      
-      .dark & {
-        background: #0f172a;
-      }
+      background: var(--bg-primary);
     }
   }
 

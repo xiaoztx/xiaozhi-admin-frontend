@@ -115,7 +115,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="所在地域">
             {{ getRegionLabel(server?.region || '') }} 
-            <span style="color: var(--el-text-color-placeholder); margin: 0 4px;">|</span> 
+            <span style="color: var(--text-tertiary); margin: 0 4px;">|</span> 
             {{ getZoneLabel(server?.zone || '') }}
           </el-descriptions-item>
           <el-descriptions-item label="操作系统">
@@ -275,17 +275,13 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-:global(html.dark) .page-header {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-darker);
-}
-
 .page-header {
   margin: 0 24px 20px;
-  background: var(--el-bg-color-overlay);
+  background: var(--bg-surface);
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-primary);
   
   .header-content {
     display: flex;
@@ -295,7 +291,7 @@ onMounted(() => {
     .instance-name {
       font-size: 20px;
       font-weight: 600;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
     }
   }
   
@@ -310,21 +306,23 @@ onMounted(() => {
   }
 }
 
-:global(html.dark) .overview-section .stat-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-darker);
-}
-
 .overview-section {
   margin-bottom: 24px;
   
   .stat-card {
-    border: none;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    background: var(--el-bg-color-overlay);
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-surface);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-primary);
+    }
     
     :deep(.el-card__body) {
-      padding: 20px;
+      padding: 24px;
     }
   }
 
@@ -343,10 +341,10 @@ onMounted(() => {
       font-size: 24px;
       flex-shrink: 0;
       
-      &.cpu { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
-      &.memory { background: var(--el-color-success-light-9); color: var(--el-color-success); }
-      &.bandwidth { background: var(--el-color-warning-light-9); color: var(--el-color-warning); }
-      &.time { background: var(--el-color-danger-light-9); color: var(--el-color-danger); }
+      &.cpu { background: var(--el-color-primary-light-9); color: var(--color-primary); }
+      &.memory { background: var(--el-color-success-light-9); color: var(--color-success); }
+      &.bandwidth { background: var(--el-color-warning-light-9); color: var(--color-warning); }
+      &.time { background: var(--el-color-danger-light-9); color: var(--color-danger); }
     }
     
     .stat-info {
@@ -355,21 +353,21 @@ onMounted(() => {
       
       .stat-label {
         font-size: 13px;
-        color: var(--el-text-color-secondary);
+        color: var(--text-secondary);
         margin-bottom: 4px;
       }
       
       .stat-value {
         font-size: 20px;
         font-weight: 600;
-        color: var(--el-text-color-primary);
+        color: var(--text-primary);
         display: flex;
         align-items: baseline;
         gap: 4px;
         
         .unit {
           font-size: 12px;
-          color: var(--el-text-color-secondary);
+          color: var(--text-tertiary);
           font-weight: normal;
         }
       }
@@ -381,17 +379,48 @@ onMounted(() => {
   padding: 0 24px 40px;
 }
 
-:global(html.dark) .info-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-darker);
-}
-
 .info-card {
-  background: var(--el-bg-color-overlay);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    background: var(--bg-surface);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+
+    :deep(.el-descriptions) {
+      /* 移除 Element Plus 默认的 Descriptions 边框 */
+      --el-descriptions-table-border: 1px solid var(--border-light);
+      --el-descriptions-item-bordered-label-background: var(--bg-secondary);
+    }
+
+    :deep(.el-descriptions__body) {
+      background: transparent;
+    }
+    
+    :deep(.el-descriptions__label) {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-weight: 500;
+      width: 120px; /* 固定 Label 宽度 */
+    }
+    
+    :deep(.el-descriptions__content) {
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', sans-serif; /* 统一字体 */
+    }
+
+    /* 优化表格圆角 */
+    :deep(.el-descriptions__table) {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-light); /* 外边框 */
+      
+      /* 移除内部重叠边框 */
+      tbody tr:last-child th,
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+    }
 
   .card-header {
     display: flex;
@@ -402,13 +431,13 @@ onMounted(() => {
     .header-title {
       font-size: 16px;
       font-weight: 600;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
     }
   }
 
   .mono-text {
     font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-    color: var(--el-text-color-regular);
+    color: var(--text-primary);
   }
   
   .ip-box {
@@ -418,7 +447,7 @@ onMounted(() => {
     
     .copy-btn {
       cursor: pointer;
-      color: #409EFF;
+      color: var(--color-primary);
       &:hover {
         opacity: 0.8;
       }
@@ -432,27 +461,23 @@ onMounted(() => {
   }
   
   .danger-text {
-    color: #F56C6C;
+    color: var(--color-danger);
   }
 }
 
-:global(html.dark) .tabs-container {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-darker);
-}
-
 .tabs-container {
-  background: var(--el-bg-color-overlay);
+  background: var(--bg-surface);
   border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-sm);
   min-height: 600px;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border-primary);
   
   :deep(.el-tabs__header) {
     margin: 0;
-    padding: 0 20px;
-    border-bottom: 1px solid var(--el-border-color-light);
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border-light);
   }
   
   :deep(.el-tabs__nav-wrap::after) {
@@ -464,10 +489,10 @@ onMounted(() => {
     line-height: 56px;
     font-size: 15px;
     font-weight: 500;
-    color: #606266;
+    color: var(--text-secondary);
     
     &.is-active {
-      color: #409EFF;
+      color: var(--color-primary);
     }
   }
   
@@ -503,12 +528,12 @@ onMounted(() => {
   h4 {
     margin: 0 0 4px 0;
     font-size: 14px;
-    color: #303133;
+    color: var(--text-primary);
   }
   p {
     margin: 0;
     font-size: 13px;
-    color: #909399;
+    color: var(--text-secondary);
   }
 }
 </style>

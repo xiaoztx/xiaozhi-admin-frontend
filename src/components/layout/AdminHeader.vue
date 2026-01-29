@@ -181,40 +181,6 @@ const handleLogout = async () => {
   box-shadow: none; // 移除默认阴影
   z-index: 100;
 
-  // 企业级深色主题 - 暗紫渐变风格
-  :global(.dark) & {
-    background: linear-gradient(90deg, #241d38 0%, #151024 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: none; // 移除阴影
-
-    // 按钮和图标适配
-    .header-actions {
-      .theme-btn, .fullscreen-btn, .notification-btn, .user-dropdown .user-info {
-        color: rgba(255, 255, 255, 0.7);
-        border-color: rgba(255, 255, 255, 0.1);
-
-        &:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          color: #fff;
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-      }
-      
-      .user-dropdown .user-info .username {
-        color: #fff;
-      }
-    }
-    
-    .sidebar-toggle-btn {
-      color: rgba(255, 255, 255, 0.7);
-      
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #fff;
-      }
-    }
-  }
-
   .mobile-menu-btn {
     display: none; // 默认隐藏，在移动端显示
     width: 40px;

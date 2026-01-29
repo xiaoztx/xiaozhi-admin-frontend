@@ -341,7 +341,7 @@ onUnmounted(() => {
     margin: 0;
     font-size: 20px;
     font-weight: 500;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
   }
   
   .header-actions {
@@ -352,9 +352,17 @@ onUnmounted(() => {
 
 .filter-card {
   margin-bottom: 20px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  
+  :deep(.el-card__body) {
+    padding: 24px;
+  }
   
   .filter-form {
-    margin-bottom: -18px;
+    margin-bottom: 0;
   }
   
   .batch-actions {

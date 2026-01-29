@@ -44,42 +44,77 @@ const metrics = [
 
 <style scoped lang="scss">
 .monitor-panel {
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    font-size: 14px;
-    color: var(--el-text-color-regular);
-  }
-  
-  .metric-chart-box {
-    background: var(--el-bg-color-overlay);
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    transition: all 0.3s;
-    
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .chart-title {
+    .chart-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      font-weight: 500;
-      margin-bottom: 20px;
-      color: var(--el-text-color-primary);
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--text-secondary);
       
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
+      /* 优化单选按钮样式 */
+      :deep(.el-radio-button__inner) {
+        background: var(--bg-surface);
+        border-color: var(--border-light);
+        color: var(--text-secondary);
+        box-shadow: none !important;
+        transition: all 0.3s;
+        padding: 8px 16px;
+        font-weight: 500;
+        
+        &:hover {
+          color: var(--color-primary);
+          background: var(--bg-tertiary);
+        }
+      }
+      
+      :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
+        color: #fff;
+        box-shadow: none;
+      }
+      
+      :deep(.el-radio-group) {
+        /* 圆角处理 */
+        .el-radio-button:first-child .el-radio-button__inner {
+          border-radius: 6px 0 0 6px;
+        }
+        .el-radio-button:last-child .el-radio-button__inner {
+          border-radius: 0 6px 6px 0;
+        }
       }
     }
+    
+    .metric-chart-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-primary);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-primary);
+      }
+  
+      .chart-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        color: var(--text-primary);
+        
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+        }
+      }
     
     .mock-chart {
       height: 180px;
@@ -106,11 +141,6 @@ const metrics = [
         }
       }
     }
-  }
-
-  :global(html.dark) .metric-chart-box {
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-darker);
   }
 }
 </style>

@@ -207,7 +207,7 @@ html, body {
       &.el-table__row--striped {
         td.el-table-fixed-column--right,
         td.el-table__fixed-right {
-          background-color: #fafafa; // 浅色模式默认斑马纹颜色
+          background-color: var(--el-table-striped-bg); // 使用统一变量
         }
       }
 
@@ -247,6 +247,7 @@ html, body {
   --bg-secondary: #303134;
   --bg-tertiary: #3c4043;
   --bg-surface: #292a2d;
+  --el-table-striped-bg: #292a2d; // 深色模式表格斑马纹背景
 
   // 企业级深色文字系统
   --text-primary: #e8eaed;

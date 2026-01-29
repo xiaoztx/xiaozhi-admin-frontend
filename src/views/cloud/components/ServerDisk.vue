@@ -53,16 +53,16 @@ const mockDisks = [
 }
 
 .code-bg {
-  background: #f4f4f5;
+  background: var(--bg-tertiary);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .link-text {
-  color: #409EFF;
+  color: var(--color-primary);
   cursor: pointer;
   text-decoration: underline;
 }
@@ -77,8 +77,24 @@ const mockDisks = [
     height: 6px;
     border-radius: 50%;
     
-    &.success { background-color: #67C23A; }
-    &.warning { background-color: #E6A23C; }
+    &.success { background-color: var(--color-success); }
+    &.warning { background-color: var(--color-warning); }
+  }
+}
+
+:deep(.el-table) {
+  --el-table-header-bg-color: var(--bg-tertiary);
+  --el-table-row-hover-bg-color: var(--bg-tertiary);
+  --el-table-border-color: var(--border-light);
+  background-color: transparent;
+  
+  th.el-table__cell {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+  
+  tr {
+    background-color: transparent;
   }
 }
 </style>

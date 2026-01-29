@@ -90,7 +90,7 @@
                  :value="bucket.name"
                >
                  <span style="float: left">{{ bucket.name }}</span>
-                 <span style="float: right; color: #8492a6; font-size: 13px">{{ bucket.region }}</span>
+                 <span style="float: right; color: var(--text-secondary); font-size: 13px">{{ bucket.region }}</span>
                </el-option>
              </el-select>
              <div class="form-tip text-gray-400 text-xs mt-1">
@@ -529,7 +529,7 @@ const handleSubmit = async () => {
   width: 6px;
 }
 .dialog-content::-webkit-scrollbar-thumb {
-  background-color: #dcdfe6;
+  background-color: var(--border-color);
   border-radius: 3px;
 }
 .dialog-content::-webkit-scrollbar-track {
@@ -538,41 +538,41 @@ const handleSubmit = async () => {
 
 .form-tip {
   line-height: 1.5;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 12px;
 }
-.text-warning { color: #e6a23c; }
-.text-success { color: #67c23a; }
-.text-danger { color: #f56c6c; }
-.text-info { color: #409eff; }
+.text-warning { color: var(--color-warning); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-info { color: var(--color-primary); }
 .mt-4 { margin-top: 1rem; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-4 { margin-bottom: 1rem; }
 .font-bold { font-weight: 700; }
 
 .acl-item {
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 12px;
   cursor: pointer;
   transition: all 0.3s;
 }
 .acl-item:hover {
-  border-color: #c0c4cc;
+  border-color: var(--text-placeholder);
 }
 .acl-item.active {
-  border-color: #409eff;
-  background-color: #ecf5ff;
+  border-color: var(--color-primary);
+  background-color: var(--bg-primary-light);
 }
 .acl-desc {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary);
   margin-top: 4px;
   margin-left: 24px;
   line-height: 1.5;
 }
 .upload-type-box {
-  background-color: #f5f7fa;
+  background-color: var(--bg-tertiary);
   padding: 10px 15px;
   border-radius: 4px;
   width: 100%;
@@ -580,36 +580,12 @@ const handleSubmit = async () => {
 
 .list-disc { list-style-type: disc; }
 .pl-5 { padding-left: 1.25rem; }
-.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-50 { background-color: var(--bg-tertiary); }
 .p-3 { padding: 0.75rem; }
 .rounded { border-radius: 0.25rem; }
 .border { border-width: 1px; }
-.border-gray-100 { border-color: #f3f4f6; }
+.border-gray-100 { border-color: var(--border-light); }
 .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
 /* 暗黑模式适配 */
-html.dark .acl-item {
-  border-color: #4c4d4f;
-}
-html.dark .acl-item:hover {
-  border-color: #606266;
-}
-html.dark .acl-item.active {
-  border-color: #409eff;
-  background-color: #262727;
-}
-html.dark .acl-desc {
-  color: #a3a6ad;
-}
-html.dark .upload-type-box {
-  background-color: #1d1e1f;
-}
-html.dark .upload-type-box .text-gray-500 {
-  color: #a3a6ad;
-}
-html.dark .bg-gray-50 {
-  background-color: #1d1e1f;
-}
-html.dark .border-gray-100 {
-  border-color: #4c4d4f;
-}
+/* Removed explicit dark mode overrides as variables handle it */
 </style>

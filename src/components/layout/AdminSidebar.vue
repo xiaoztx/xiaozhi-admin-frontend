@@ -369,6 +369,8 @@ const handleMouseLeave = () => {
   flex-direction: column;
   transition: width var(--transition-normal);
   overflow: hidden;
+  box-shadow: 4px 0 24px 0 rgba(0, 0, 0, 0.04); // 增强右侧阴影
+  z-index: 1001; // 确保阴影在内容之上
 
   &.collapsed {
     width: 72px;
@@ -637,12 +639,12 @@ const handleMouseLeave = () => {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: #10b981;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+      background-color: var(--color-success);
+      box-shadow: 0 0 8px var(--color-success-light-5);
 
       &.online {
-        background-color: #10b981;
-        box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        background-color: var(--color-success);
+        box-shadow: 0 0 8px var(--color-success-light-5);
       }
     }
 
@@ -748,28 +750,8 @@ const handleMouseLeave = () => {
 
 // 聚焦状态
 .nav-link:focus {
-  outline: 2px solid var(--nav-indicator);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
-
-// 暗色主题优化
-.dark .sidebar-nav .nav-menu .nav-item .nav-link.active {
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.2), rgba(64, 158, 255, 0.1));
-  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.3);
-  border-color: rgba(64, 158, 255, 0.4);
-
-  &::before {
-    background: linear-gradient(135deg, #409eff, #66b1ff);
-    box-shadow: 0 0 12px rgba(64, 158, 255, 0.7);
-  }
-
-  &::after {
-    background: linear-gradient(135deg, rgba(64, 158, 255, 0.4), rgba(64, 158, 255, 0.15));
-  }
-
-  .nav-label {
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
 }
 
 // 涟漪效果动画

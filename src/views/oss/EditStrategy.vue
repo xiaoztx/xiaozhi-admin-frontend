@@ -461,19 +461,19 @@ const handleSubmit = async () => {
 }
 .custom-divider :deep(.el-divider__text) {
   font-size: 16px;
-  color: #409eff; /* 蓝色文字 */
+  color: var(--color-primary); /* 蓝色文字 */
   font-weight: 500;
 }
 
 .form-tip {
   line-height: 1.5;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 12px;
 }
-.text-warning { color: #e6a23c; }
-.text-success { color: #67c23a; }
-.text-danger { color: #f56c6c; }
-.text-info { color: #409eff; }
+.text-warning { color: var(--color-warning); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-info { color: var(--color-primary); }
 .mt-1 { margin-top: 0.25rem; }
 .mt-4 { margin-top: 1rem; }
 .mt-8 { margin-top: 2rem; }
@@ -482,7 +482,7 @@ const handleSubmit = async () => {
 .font-bold { font-weight: 700; }
 
 .info-block {
-  background-color: #f0f9eb;
+  background-color: var(--bg-success-light);
   padding: 16px;
   border-radius: 4px;
 }
@@ -490,11 +490,11 @@ const handleSubmit = async () => {
   font-weight: bold;
   margin-bottom: 8px;
   font-size: 14px;
-  color: #606266;
+  color: var(--text-primary);
 }
 .info-content {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-regular);
   line-height: 1.6;
 }
 .cors-list {
@@ -505,7 +505,7 @@ const handleSubmit = async () => {
   margin-bottom: 4px;
 }
 .cors-list .label {
-  color: #409eff;
+  color: var(--color-primary);
   font-weight: 500;
 }
 .acl-cards {
@@ -515,7 +515,7 @@ const handleSubmit = async () => {
 }
 .acl-card {
   flex: 1;
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 16px;
   cursor: pointer;
@@ -524,74 +524,38 @@ const handleSubmit = async () => {
   flex-direction: column;
 }
 .acl-card:hover {
-  border-color: #c0c4cc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-color: var(--text-placeholder);
+  box-shadow: var(--shadow-sm);
 }
 .acl-card.active {
-  border-color: #409eff;
-  background-color: #ecf5ff;
+  border-color: var(--color-primary);
+  background-color: var(--bg-primary-light);
 }
 .acl-header {
   margin-bottom: 8px;
 }
 .inline-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-left: 12px;
 }
 .acl-radio :deep(.el-radio__label) {
   font-weight: bold;
   font-size: 14px;
-  color: #303133;
+  color: var(--text-primary);
 }
 .acl-card.active .acl-radio :deep(.el-radio__label) {
-  color: #409eff;
+  color: var(--color-primary);
 }
 .acl-desc {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
   line-height: 1.5;
   padding-left: 24px; /* 对齐 Radio 文字 */
 }
 .acl-card.active .acl-desc {
-  color: #409eff;
+  color: var(--color-primary);
 }
 /* 暗黑模式适配 */
-html.dark .custom-divider :deep(.el-divider__text) {
-  background-color: var(--el-dialog-bg-color); /* 匹配 Dialog 背景 */
-  color: #409eff;
-}
-html.dark .info-block {
-  background-color: #1a2518; /* 对应浅色 #f0f9eb 的深色变体 */
-}
-html.dark .info-title {
-  color: #a3a6ad;
-}
-html.dark .info-content {
-  color: #cfd3dc;
-}
-html.dark .acl-card {
-  border-color: #4c4d4f;
-  background-color: transparent;
-}
-html.dark .acl-card:hover {
-  border-color: #606266;
-  background-color: #262727;
-}
-html.dark .acl-card.active {
-  border-color: #409eff;
-  background-color: #18222c; /* 深蓝色背景 */
-}
-html.dark .acl-radio :deep(.el-radio__label) {
-  color: #e5eaf3;
-}
-html.dark .acl-card.active .acl-radio :deep(.el-radio__label) {
-  color: #409eff;
-}
-html.dark .acl-desc {
-  color: #a3a6ad;
-}
-html.dark .acl-card.active .acl-desc {
-  color: #a0cfff;
-}
+/* Removed explicit dark mode overrides as variables handle it */
 </style>

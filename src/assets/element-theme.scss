@@ -577,8 +577,15 @@ body .el-message {
     }
 
     // 暗色模式斑马纹
-    &.el-table--striped .el-table__row:nth-child(even) {
-      background-color: #2a2a2a;
+    &.el-table--striped {
+      .el-table__row:nth-child(even) {
+        background-color: var(--el-table-striped-bg);
+        
+        // 强制覆盖 td 背景色
+        td.el-table__cell {
+          background-color: var(--el-table-striped-bg);
+        }
+      }
     }
   }
 

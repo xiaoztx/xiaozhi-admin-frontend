@@ -506,7 +506,7 @@ const handleUpdatePassword = async () => {
 
       .role-tag {
         color: var(--color-primary);
-        background: rgba(64, 158, 255, 0.1);
+        background: var(--bg-primary-light);
         display: inline-block;
         padding: 4px 12px;
         border-radius: 20px;

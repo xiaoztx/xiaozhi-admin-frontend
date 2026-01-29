@@ -1408,7 +1408,7 @@ const handleDeleteFileAction = async () => {
         }
 
         .status-tag {
-          background-color: rgba(103, 194, 58, 0.15);
+          background-color: var(--bg-success-light);
           color: var(--color-success);
         }
 
@@ -1418,7 +1418,7 @@ const handleDeleteFileAction = async () => {
         }
 
         .default-tag {
-          background-color: rgba(230, 162, 60, 0.15);
+          background-color: var(--bg-warning-light);
           color: var(--color-warning);
         }
       }
@@ -1560,15 +1560,15 @@ const handleDeleteFileAction = async () => {
           
           // 特定按钮颜色
           &:nth-child(1) { // 上传
-            background-color: #ecf5ff;
+            background-color: var(--bg-primary-light);
             color: var(--color-primary);
-            &:hover { background-color: #d9ecff; }
+            &:hover { background-color: var(--bg-primary); color: #fff; }
           }
           
           &:nth-child(2) { // 新建文件夹
-            background-color: #fdf6ec;
+            background-color: var(--bg-warning-light);
             color: var(--color-warning);
-            &:hover { background-color: #faecd8; }
+            &:hover { background-color: var(--bg-warning); color: #fff; }
           }
         }
       }
@@ -1650,7 +1650,7 @@ const handleDeleteFileAction = async () => {
             
             .folder-icon {
               font-size: 64px;
-              color: #FFC107; // 经典的文件夹黄色
+              color: var(--color-warning); // 经典的文件夹黄色
               filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
             }
             
@@ -1723,9 +1723,9 @@ const handleDeleteFileAction = async () => {
 // 右键菜单样式
 .context-menu {
   position: fixed;
-  background: white;
+  background: var(--bg-overlay);
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   padding: 6px 0;
   z-index: 2000;
   min-width: 140px;
@@ -1761,31 +1761,36 @@ const handleDeleteFileAction = async () => {
   }
 }
 
+// Removed manual dark mode overrides for context menu as variables handle it
+// If variables are not enough, we should define them globally
+// For now, removing the explicit html.dark block to rely on CSS variables
+/*
 html.dark .context-menu {
-  background: #1d1e1f;
-  border-color: #4c4d4f;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  background: var(--bg-overlay);
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-md);
 
   .menu-item {
-    color: #cfd3dc;
+    color: var(--text-secondary);
 
     &:hover {
-      background-color: #262727;
-      color: #409eff;
+      background-color: var(--bg-tertiary);
+      color: var(--color-primary);
     }
 
     &.delete {
-      color: #f56c6c;
+      color: var(--color-danger);
       &:hover {
-        background-color: rgba(245, 108, 108, 0.1);
+        background-color: var(--bg-danger-light);
       }
     }
   }
 
   .divider {
-    background-color: #4c4d4f;
+    background-color: var(--border-light);
   }
 }
+*/
 
 .link-list-container {
   .link-item {
@@ -1805,12 +1810,12 @@ html.dark .context-menu {
     display: flex;
     align-items: center;
     gap: 6px;
-    background-color: #fdf6ec;
-    color: #e6a23c;
+    background-color: var(--bg-warning-light);
+    color: var(--color-warning);
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 13px;
-    border: 1px solid #faecd8;
+    border: 1px solid var(--border-warning-light);
 
     .el-icon {
       font-size: 16px;
