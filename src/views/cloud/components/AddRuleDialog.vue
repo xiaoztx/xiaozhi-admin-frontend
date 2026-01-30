@@ -67,11 +67,6 @@
                     <el-option label="全部IPv6地址" value="::/0" />
                     <el-option label="全部IPv4和IPv6地址" value="0.0.0.0/0,::/0" />
                  </el-option-group>
-                 <el-option-group label="私有网络">
-                    <el-option label="私有网络A类 (10.0.0.0/8)" value="10.0.0.0/8" />
-                    <el-option label="私有网络B类 (172.16.0.0/12)" value="172.16.0.0/12" />
-                    <el-option label="私有网络C类 (192.168.0.0/16)" value="192.168.0.0/16" />
-                 </el-option-group>
                </el-select>
              </el-form-item>
            </div>

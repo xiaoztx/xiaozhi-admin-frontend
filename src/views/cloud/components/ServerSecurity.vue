@@ -146,7 +146,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { QuestionFilled, Rank } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -154,7 +153,13 @@ import AddRuleDialog from './AddRuleDialog.vue'
 import ImportRuleDialog from './ImportRuleDialog.vue'
 import Sortable from 'sortablejs'
 
-const route = useRoute()
+const props = defineProps({
+  serverId: {
+    type: [Number, String],
+    required: true
+  }
+})
+
 const loading = ref(false)
 const rules = ref<any[]>([])
 const selectedRules = ref<any[]>([])
@@ -207,6 +212,7 @@ const getAppType = (row: any) => {
 }
 
 const formatSourceCidr = (cidr: string) => {
+  if (!cidr) return '-'
   if (cidr === '0.0.0.0/0') return '全部IPv4地址'
   if (cidr === '::/0') return '全部IPv6地址'
   if (cidr === '0.0.0.0/0,::/0') return '全部IPv4和IPv6地址'
@@ -214,7 +220,7 @@ const formatSourceCidr = (cidr: string) => {
 }
 
 const fetchRules = async () => {
-  const id = route.params.id
+  const id = props.serverId
   if (!id) return
 
   loading.value = true
@@ -247,7 +253,7 @@ const handleImportRule = () => {
 }
 
 const handleImportSubmit = async (data: any) => {
-  const id = route.params.id
+  const id = props.serverId
   // 兼容直接传数组的情况
   const rulesToImport = Array.isArray(data) ? data : data.rules
   const mode = data.mode || 'append'
@@ -302,7 +308,7 @@ const handleOneClickAllow = () => {
       type: 'warning',
     }
   ).then(async () => {
-    const id = route.params.id
+    const id = props.serverId
     loading.value = true
     try {
       const updates = dropRules.map(r => ({
@@ -322,7 +328,7 @@ const handleOneClickAllow = () => {
 }
 
 const handleAddSubmit = async (formData: any) => {
-  const id = route.params.id
+  const id = props.serverId
   try {
     if (editRuleData.value) {
       // 编辑模式 (formData 是单条对象)
@@ -357,7 +363,7 @@ const handleDelete = (row: any) => {
       type: 'warning',
     }
   ).then(async () => {
-    const id = route.params.id
+    const id = props.serverId
     try {
       // 传递完整的 rule 对象以匹配删除
       await request({
@@ -385,7 +391,7 @@ const handleBatchDelete = () => {
   ).then(async () => {
     // 串行删除，或者后端支持批量接口。这里为了简单使用循环串行删除
     // 实际生产建议后端加批量接口
-    const id = route.params.id
+    const id = props.serverId
     let successCount = 0
     loading.value = true
     

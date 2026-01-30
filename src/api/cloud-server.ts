@@ -65,3 +65,25 @@ export const deleteServer = (id: number) => {
     method: 'delete'
   })
 }
+
+export interface MonitorPoint {
+  timestamp: number
+  value: number
+}
+
+export interface MonitorData {
+  cpu: MonitorPoint[]
+  memory: MonitorPoint[]
+  disk_read: MonitorPoint[]
+  disk_write: MonitorPoint[]
+  net_in: MonitorPoint[]
+  net_out: MonitorPoint[]
+}
+
+export const getServerMonitorData = (id: number, params?: { start_time?: string; end_time?: string }) => {
+  return request<any, MonitorData>({
+    url: `/servers/${id}/monitor`,
+    method: 'get',
+    params
+  })
+}
