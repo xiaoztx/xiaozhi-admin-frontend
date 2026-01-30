@@ -197,7 +197,7 @@ const ServerMonitor = defineAsyncComponent(() => import('./components/ServerMoni
 const ServerDisk = defineAsyncComponent(() => import('./components/ServerDisk.vue'))
 const ServerSecurity = defineAsyncComponent(() => import('./components/ServerSecurity.vue'))
 const ServerTerminal = defineAsyncComponent(() => import('./components/ServerTerminal.vue'))
-const OperationRecords = defineAsyncComponent(() => import('./components/OperationRecords.vue'))
+const OperationRecords = defineAsyncComponent(() => import('./components/OperationLog.vue'))
 
 // 路由和工具
 const route = useRoute()
