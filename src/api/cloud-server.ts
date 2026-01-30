@@ -2,6 +2,7 @@ import request from '@/utils/request'
 
 export interface CloudServer {
   id: number
+  cloud_config_id?: number
   instance_id: string
   instance_name: string
   region: string
@@ -11,6 +12,7 @@ export interface CloudServer {
   os_name: string
   cpu: number
   memory: number
+  system_disk_size: number
   bandwidth: number
   status: string
   expired_at: string
@@ -35,12 +37,24 @@ export const getServers = (params: any) => {
   })
 }
 
-export function getServerDetail(id: number) {
-  // 获取服务器详情
-  return request<any, CloudServer>({
-    url: `/servers/${id}`,
-    method: 'get'
-  })
+export interface CloudDisk {
+  disk_id: string
+  disk_type: string
+  disk_size: number
+  disk_usage: string
+  delete_with_instance: boolean
+  disk_name?: string
+  disk_charge_type?: string
+  status: string
+  created_at: string
+}
+
+export const getServerDetail = (id: number) => {
+  return request.get(`/servers/${id}`)
+}
+
+export const getServerDisks = (id: number) => {
+  return request.get<CloudDisk[]>(`/servers/${id}/disks`)
 }
 
 export const syncServers = (data: { cloud_config_id: number }) => {
@@ -74,8 +88,10 @@ export interface MonitorPoint {
 export interface MonitorData {
   cpu: MonitorPoint[]
   memory: MonitorPoint[]
+  memory_used: MonitorPoint[]
   disk_read: MonitorPoint[]
   disk_write: MonitorPoint[]
+  disk_usage: MonitorPoint[]
   net_in: MonitorPoint[]
   net_out: MonitorPoint[]
 }

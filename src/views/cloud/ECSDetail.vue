@@ -32,7 +32,7 @@
               </el-button>
             </el-tooltip>
             <el-tooltip content="刷新状态" placement="bottom">
-              <el-button :icon="Refresh" circle @click="loadData" class="refresh-btn" />
+              <el-button :icon="Refresh" circle @click="() => loadData(true)" class="refresh-btn" />
             </el-tooltip>
           </el-space>
         </div>
@@ -85,12 +85,12 @@
             <el-col :span="6">
               <el-card shadow="hover" class="stat-card">
                 <div class="stat-item">
-                  <div class="stat-icon time">
-                    <el-icon><Timer /></el-icon>
+                  <div class="stat-icon disk">
+                    <el-icon><Files /></el-icon>
                   </div>
                   <div class="stat-info">
-                    <div class="stat-label">运行时长</div>
-                    <div class="stat-value">{{ runDays }} <span class="unit">天</span></div>
+                    <div class="stat-label">系统盘容量</div>
+                    <div class="stat-value">{{ server?.system_disk_size || 0 }} <span class="unit">GB</span></div>
                   </div>
                 </div>
               </el-card>
@@ -140,7 +140,7 @@
         <el-tabs v-model="activeTab" class="detail-tabs">
           <el-tab-pane label="资源监控" name="monitor" lazy>
             <div class="tab-pane-content">
-               <ServerMonitor :server-id="serverId" />
+               <ServerMonitor :server-id="serverId" :system-disk-size="server?.system_disk_size" />
             </div>
           </el-tab-pane>
           
@@ -162,23 +162,13 @@
              </div>
           </el-tab-pane>
 
-          <el-tab-pane label="操作日志" name="logs" lazy>
+          <el-tab-pane label="操作记录" name="logs" lazy>
             <div class="tab-pane-content">
-              <el-timeline>
-                <el-timeline-item
-                  v-for="(activity, index) in mockActivities"
-                  :key="index"
-                  :timestamp="activity.timestamp"
-                  :type="activity.type"
-                  :hollow="index === 0"
-                  size="large"
-                >
-                  <div class="log-content">
-                    <h4>{{ activity.title }}</h4>
-                    <p>{{ activity.content }}</p>
-                  </div>
-                </el-timeline-item>
-              </el-timeline>
+              <!-- 使用新的操作记录组件 (Tencent Cloud OperationRecord Compatible) -->
+              <OperationRecords 
+                v-if="server?.instance_id"
+                :resource-id="server?.instance_id"
+              />
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -188,16 +178,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, defineAsyncComponent } from 'vue'
+import { ref, onMounted, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   VideoPlay, SwitchButton, RefreshRight, 
   CopyDocument, Refresh, Platform,
-  Cpu, Connection, Timer, Monitor
+  Cpu, Connection, Monitor, Files
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import useClipboard from 'vue-clipboard3'
-import { getServerDetail as getDetail, type CloudServer } from '../../api/cloud-server'
+import { getServerDetail as getDetail, syncServers, type CloudServer } from '../../api/cloud-server'
 import { useServerAction } from '@/hooks/useServerAction'
 import { SERVER_STATUS_MAP } from '@/constants/cloud'
 import { getRegionLabel, getZoneLabel } from '@/constants/region'
@@ -207,6 +197,7 @@ const ServerMonitor = defineAsyncComponent(() => import('./components/ServerMoni
 const ServerDisk = defineAsyncComponent(() => import('./components/ServerDisk.vue'))
 const ServerSecurity = defineAsyncComponent(() => import('./components/ServerSecurity.vue'))
 const ServerTerminal = defineAsyncComponent(() => import('./components/ServerTerminal.vue'))
+const OperationRecords = defineAsyncComponent(() => import('./components/OperationRecords.vue'))
 
 // 路由和工具
 const route = useRoute()
@@ -233,25 +224,19 @@ watch(activeTab, (val) => {
   }
 })
 
-// 计算属性
-const runDays = computed(() => {
-  // 优先使用启动时间，其次使用创建时间
-  const timeStr = server.value?.start_time || server.value?.created_at
-  if (!timeStr) return 0
-  const start = new Date(timeStr).getTime()
-  const now = Date.now()
-  return Math.floor((now - start) / (1000 * 60 * 60 * 24))
-})
-
-const mockActivities = [
-  { title: '系统监控', content: 'CPU 使用率处于正常范围 (12%)', timestamp: '2023-10-27 10:00:00', type: 'info' },
-  { title: '实例重启', content: '用户 root 执行了重启操作', timestamp: '2023-10-26 15:30:00', type: 'warning' },
-  { title: '实例启动', content: '实例成功启动，所有服务运行正常', timestamp: '2023-10-26 15:31:00', type: 'success' },
-]
-
-const loadData = async () => {
+const loadData = async (sync = false) => {
   loading.value = true
   try {
+    // 如果请求同步且存在配置ID，先执行同步
+    if (sync && server.value?.cloud_config_id) {
+      try {
+        await syncServers({ cloud_config_id: server.value.cloud_config_id })
+        ElMessage.success('同步指令已下发')
+      } catch (error) {
+        console.error('同步失败', error)
+      }
+    }
+
     const res = await getDetail(serverId)
     server.value = res as unknown as CloudServer // 类型转换
   } catch (error) {
@@ -379,7 +364,7 @@ onMounted(() => {
       &.cpu { background: var(--el-color-primary-light-9); color: var(--color-primary); }
       &.memory { background: var(--el-color-success-light-9); color: var(--color-success); }
       &.bandwidth { background: var(--el-color-warning-light-9); color: var(--color-warning); }
-      &.time { background: var(--el-color-danger-light-9); color: var(--color-danger); }
+      &.disk { background: var(--el-color-info-light-9); color: var(--color-info); }
     }
     
     .stat-info {

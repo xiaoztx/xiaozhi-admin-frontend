@@ -20,8 +20,14 @@
         </div>
       </el-col>
       <el-col :span="12">
-        <div class="metric-chart-box">
-          <div class="chart-title">内存 使用率 (%)</div>
+        <div class="metric-chart-box" :class="{ 'warning-border': isMemWarning }">
+          <div class="chart-title-flex">
+            <span>内存 使用率 (%)</span>
+            <span v-if="currentMemUsed" class="mem-used-tag" :class="{ 'warning-text': isMemWarning }">
+              <el-icon v-if="isMemWarning" class="warning-icon"><Warning /></el-icon>
+              当前已用: {{ currentMemUsed }}
+            </span>
+          </div>
           <div ref="memChartRef" class="chart-container"></div>
         </div>
       </el-col>
@@ -33,7 +39,13 @@
       </el-col>
       <el-col :span="12">
         <div class="metric-chart-box">
-          <div class="chart-title">磁盘 IO (KB/s)</div>
+          <div class="chart-title-flex" v-if="diskTitle === '磁盘空间使用率 (%)'">
+            <span>{{ diskTitle }}</span>
+            <span v-if="currentDiskUsed" class="mem-used-tag">
+              当前已用: {{ currentDiskUsed }}
+            </span>
+          </div>
+          <div class="chart-title" v-else>{{ diskTitle }}</div>
           <div ref="diskChartRef" class="chart-container"></div>
         </div>
       </el-col>
@@ -43,17 +55,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Warning } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { getServerMonitorData, type MonitorData, type MonitorPoint } from '../../../api/cloud-server'
 import dayjs from 'dayjs'
 
 const props = defineProps<{
   serverId: number | string
+  systemDiskSize?: number
 }>()
 
 const timeRange = ref('1h')
 const loading = ref(false)
+const diskTitle = ref('磁盘 IO (KB/s)')
+const currentMemUsed = ref('')
+const currentDiskUsed = ref('')
+const isMemWarning = ref(false)
 
 const cpuChartRef = ref<HTMLElement>()
 const memChartRef = ref<HTMLElement>()
@@ -152,6 +169,39 @@ const fetchData = async () => {
   }
 }
 
+const formatTooltip = (params: any, unit: string) => {
+  let tip = ''
+  if (params && params.length > 0) {
+    // 假设 axis data 是 timestamp (秒)
+    const timestamp = Number(params[0].axisValue)
+    // 格式化时间
+    const dateStr = dayjs(timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')
+    tip += `<div style="margin-bottom: 8px; font-weight: 500">${dateStr}</div>`
+    
+    params.forEach((param: any) => {
+      // 颜色圆点
+      const marker = param.marker
+      // 系列名
+      const seriesName = param.seriesName
+      // 值
+      const value = param.value
+      
+      tip += `
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 13px">
+          <span style="display: flex; align-items: center">
+            ${marker}
+            <span style="color: #666">${seriesName}</span>
+          </span>
+          <span style="font-weight: 500; color: #333">
+            ${value} ${unit}
+          </span>
+        </div>
+      `
+    })
+  }
+  return tip
+}
+
 const updateCharts = (data: MonitorData) => {
   if (charts.length < 4) return
   
@@ -163,6 +213,7 @@ const updateCharts = (data: MonitorData) => {
   // CPU
   if (charts[0]) {
     charts[0].setOption({
+      tooltip: { formatter: (params: any) => formatTooltip(params, '%') },
       xAxis: { data: getX(data.cpu) },
       series: [{
         name: 'CPU使用率',
@@ -178,15 +229,75 @@ const updateCharts = (data: MonitorData) => {
   
   // Memory
   if (charts[1]) {
+    // 计算最新内存使用量
+    if (data.memory_used && data.memory_used.length > 0) {
+      const lastPoint = data.memory_used[data.memory_used.length - 1]
+      currentMemUsed.value = `${lastPoint?.value.toFixed(2)} MB`
+    } else {
+      currentMemUsed.value = ''
+    }
+
+    // 计算预警状态 (>80%)
+    if (data.memory && data.memory.length > 0) {
+      const lastPoint = data.memory[data.memory.length - 1]
+      const lastPercent = lastPoint?.value || 0
+      isMemWarning.value = lastPercent > 80
+    }
+
+    // 构造 Tooltip (同时显示 % 和 MB)
+    const memTooltip = (params: any) => {
+      let tip = ''
+      if (params && params.length > 0) {
+        const index = params[0].dataIndex
+        const timestamp = Number(params[0].axisValue)
+        const dateStr = dayjs(timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')
+        tip += `<div style="margin-bottom: 8px; font-weight: 500">${dateStr}</div>`
+        
+        // Series 0: Percentage
+        const p = params[0]
+        tip += `
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 13px">
+            <span style="display: flex; align-items: center">
+              ${p.marker}
+              <span style="color: #666">使用率</span>
+            </span>
+            <span style="font-weight: 500; color: #333">
+              ${p.value} %
+            </span>
+          </div>
+        `
+        // Series 1 (Hidden): MB
+        if (data.memory_used && data.memory_used.length > index) {
+           // 尝试获取对应 MB 值，由于时间戳可能对齐也可能不对齐，这里简单假设对齐
+           // 严格做法是 find by timestamp，但 echarts category axis 是一一对应的
+           const mbVal = data.memory_used[index]?.value.toFixed(2) || '0.00'
+           tip += `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 13px">
+              <span style="display: flex; align-items: center">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#eee;margin-right:6px"></span>
+                <span style="color: #666">使用量</span>
+              </span>
+              <span style="font-weight: 500; color: #333">
+                ${mbVal} MB
+              </span>
+            </div>
+           `
+        }
+      }
+      return tip
+    }
+
     charts[1].setOption({
+      tooltip: { formatter: memTooltip },
       xAxis: { data: getX(data.memory) },
       series: [{
         name: '内存使用率',
         type: 'line',
         smooth: true,
         showSymbol: false,
-        areaStyle: { opacity: 0.1, color: '#67C23A' },
-        itemStyle: { color: '#67C23A' },
+        areaStyle: { opacity: 0.1, color: isMemWarning.value ? '#F56C6C' : '#67C23A' }, // 警告变红
+        itemStyle: { color: isMemWarning.value ? '#F56C6C' : '#67C23A' },
+        lineStyle: { color: isMemWarning.value ? '#F56C6C' : '#67C23A' },
         data: getY(data.memory)
       }]
     })
@@ -196,6 +307,7 @@ const updateCharts = (data: MonitorData) => {
   const kbFactor = 1 / 1024
   if (charts[2]) {
     charts[2].setOption({
+      tooltip: { formatter: (params: any) => formatTooltip(params, 'KB/s') },
       legend: { data: ['流入', '流出'], top: 0, right: 10, icon: 'circle' },
       xAxis: { data: getX(data.net_in.length > 0 ? data.net_in : data.net_out) },
       series: [
@@ -221,28 +333,86 @@ const updateCharts = (data: MonitorData) => {
   
   // Disk (Convert Bytes to KB)
   if (charts[3]) {
-    charts[3].setOption({
-      legend: { data: ['读', '写'], top: 0, right: 10, icon: 'circle' },
-      xAxis: { data: getX(data.disk_read.length > 0 ? data.disk_read : data.disk_write) },
-      series: [
-        {
-          name: '读',
+    // 优先展示磁盘使用率 (Lighthouse)
+    if (data.disk_usage && data.disk_usage.length > 0) {
+      diskTitle.value = '磁盘空间使用率 (%)'
+      
+      // 计算最新磁盘使用量 (GB)
+      // 假设 disk_usage 返回的是百分比，我们需要知道总容量才能计算 GB
+      // 由于 MonitorData 里没有总容量，这里只能展示百分比，或者假设一个固定值
+      // 更好的方式是 props 传入 system_disk_size
+      
+      // 临时方案：如果父组件传入了 systemDiskSize，则计算
+      // 但 props 里没有 systemDiskSize，需要新增
+      
+      // 修正方案：仅展示百分比对应的文本，或者只在有百分比时显示
+      // 如果要显示 GB，必须知道总大小。
+      // 这里先根据用户的要求 "当前已使用：**Gib"，
+      // 暂时只能通过 (百分比 / 100) * 总容量 来计算。
+      // 由于没有总容量，这里先留空，或者请求用户补充总容量信息。
+      
+      // 观察到父组件 ECSDetail.vue 传入了 serverId，但没传 diskSize。
+      // 为了快速实现，我们假设可以从 props 获取或者从 API 补充。
+      // 但 props 只有 serverId。
+      // 
+      // 重新审视需求：用户想要 "当前已使用：**Gib"。
+      // 我们可以尝试在 tooltip 里找线索，或者修改 props。
+      // 
+      // 让我们先修改 props 定义，接收 systemDiskSize
+      
+      const lastPoint = data.disk_usage[data.disk_usage.length - 1]
+      const usagePercent = lastPoint?.value || 0
+      
+      if (props.systemDiskSize) {
+        const usedGB = (usagePercent / 100 * props.systemDiskSize).toFixed(2)
+        currentDiskUsed.value = `${usedGB} GB`
+      } else {
+         // 如果没有总大小，只显示百分比作为降级，或者不显示
+         // 用户明确要 Gib，所以我们必须修改 Props
+         currentDiskUsed.value = ''
+      }
+
+      charts[3].setOption({
+        tooltip: { formatter: (params: any) => formatTooltip(params, '%') },
+        legend: { data: ['使用率'], top: 0, right: 10, icon: 'circle' },
+        xAxis: { data: getX(data.disk_usage) },
+        series: [{
+          name: '使用率',
           type: 'line',
           smooth: true,
           showSymbol: false,
+          areaStyle: { opacity: 0.1, color: '#409EFF' },
           itemStyle: { color: '#409EFF' },
-          data: getY(data.disk_read, kbFactor)
-        },
-        {
-          name: '写',
-          type: 'line',
-          smooth: true,
-          showSymbol: false,
-          itemStyle: { color: '#67C23A' },
-          data: getY(data.disk_write, kbFactor)
-        }
-      ]
-    })
+          data: getY(data.disk_usage)
+        }]
+      })
+    } else {
+      // 否则展示磁盘 IO (CVM)
+      diskTitle.value = '磁盘 IO (KB/s)'
+      charts[3].setOption({
+        tooltip: { formatter: (params: any) => formatTooltip(params, 'KB/s') },
+        legend: { data: ['读', '写'], top: 0, right: 10, icon: 'circle' },
+        xAxis: { data: getX(data.disk_read.length > 0 ? data.disk_read : data.disk_write) },
+        series: [
+          {
+            name: '读',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: '#409EFF' },
+            data: getY(data.disk_read, kbFactor)
+          },
+          {
+            name: '写',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: '#67C23A' },
+            data: getY(data.disk_write, kbFactor)
+          }
+        ]
+      })
+    }
   }
 }
 
@@ -350,6 +520,42 @@ watch(() => props.serverId, () => {
       .chart-container {
         height: 250px;
         width: 100%;
+      }
+
+      &.warning-border {
+        border-color: #F56C6C;
+        box-shadow: 0 0 8px rgba(245, 108, 108, 0.2);
+      }
+
+      .chart-title-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+
+        .mem-used-tag {
+          font-size: 12px;
+          color: var(--text-secondary);
+          background: var(--bg-tertiary);
+          padding: 2px 8px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          &.warning-text {
+            color: #F56C6C;
+            background: #fef0f0;
+            font-weight: bold;
+          }
+
+          .warning-icon {
+            font-size: 14px;
+          }
+        }
       }
     }
 }
