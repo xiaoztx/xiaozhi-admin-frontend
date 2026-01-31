@@ -138,7 +138,7 @@
                   <el-timeline-item
                     v-for="(activity, index) in activities"
                     :key="index"
-                    :type="activity.type"
+                    :type="activity.type as any"
                     :timestamp="activity.timestamp"
                   >
                     {{ activity.content }}

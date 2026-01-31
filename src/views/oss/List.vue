@@ -790,11 +790,12 @@ const getFullKey = (fileName: string) => {
     }
 
     try {
-        const { value: newValue } = await ElMessageBox.prompt(promptMsg, title, {
+        const result = await ElMessageBox.prompt(promptMsg, title, {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
             inputValue: defaultInput
         })
+        const newValue = (result as any).value
 
          if (newValue && newValue !== defaultInput) {
             // 根据操作类型构造参数

@@ -17,7 +17,7 @@
           <div class="card-body">
             <div class="info-item">
               <span class="label">云服务商:</span>
-              <span class="value">{{ getProviderLabel(server.cloud_config?.provider) }}</span>
+              <span class="value">{{ getProviderLabel((server as any).cloud_config?.provider) }}</span>
             </div>
             <div class="info-item">
               <span class="label">公网 IP:</span>

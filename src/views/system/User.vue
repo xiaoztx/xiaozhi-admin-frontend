@@ -111,7 +111,7 @@
 
         <el-table-column prop="role" label="角色" width="120" align="center">
           <template #default="{ row }">
-            <el-tag :type="getRoleTagType(row.role)" effect="plain" round>
+            <el-tag :type="getRoleTagType(row.role) as any" effect="plain" round>
               {{ getRoleLabel(row.role) }}
             </el-tag>
           </template>

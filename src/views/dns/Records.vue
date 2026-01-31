@@ -75,7 +75,7 @@
 
         <el-table-column prop="record_type" label="记录类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="getRecordTypeTag(row.record_type)" size="small" effect="light">{{ row.record_type }}</el-tag>
+            <el-tag :type="getRecordTypeTag(row.record_type) as any" size="small" effect="light">{{ row.record_type }}</el-tag>
           </template>
         </el-table-column>
 

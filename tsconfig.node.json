@@ -5,6 +5,9 @@
     "lib": ["ES2023"],
     "module": "ESNext",
     "types": ["node"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
     "skipLibCheck": true,
 
     /* Bundler mode */

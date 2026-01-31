@@ -36,6 +36,10 @@
   --bg-surface: #ffffff;
   --bg-overlay: rgba(32, 33, 36, 0.6);
 
+  // 表格语义化颜色 (浅色模式默认值)
+  --table-row-hover-bg: var(--bg-secondary);
+  --table-row-striped-bg: #fafafa;
+
   // 文字颜色系统
   --text-primary: #202124;
   --text-secondary: #5f6368;
@@ -167,8 +171,8 @@ html, body {
   --el-table-header-text-color: var(--text-secondary);
   
   // 关键变量：统一控制 Hover 和 选中状态的颜色
-  --el-table-row-hover-bg-color: var(--bg-secondary);
-  --el-table-current-row-bg-color: var(--bg-secondary);
+  --el-table-row-hover-bg-color: var(--table-row-hover-bg);
+  --el-table-current-row-bg-color: var(--table-row-hover-bg);
 
   // 去除固定列的阴影，只在滚动时显示
   .el-table__fixed-right-patch {
@@ -207,7 +211,7 @@ html, body {
       &.el-table__row--striped {
         td.el-table-fixed-column--right,
         td.el-table__fixed-right {
-          background-color: var(--el-table-striped-bg); // 使用统一变量
+          background-color: var(--table-row-striped-bg); // 使用统一语义变量
         }
       }
 
@@ -215,7 +219,7 @@ html, body {
       &.current-row {
         td.el-table-fixed-column--right,
         td.el-table__fixed-right {
-          background-color: var(--el-table-current-row-bg-color) !important;
+          background-color: var(--table-row-hover-bg) !important;
         }
       }
     }
@@ -234,7 +238,7 @@ html, body {
       > td.el-table__cell,
       > td.el-table-fixed-column--right,
       > td.el-table__fixed-right {
-        background-color: var(--el-table-row-hover-bg-color) !important;
+        background-color: var(--table-row-hover-bg) !important;
       }
     }
   }
@@ -242,12 +246,19 @@ html, body {
 
 // 企业级深色主题
 .dark {
+  // 表格语义化颜色 (深色模式覆盖)
+  --table-row-hover-bg: #303134; // 深灰色，与背景色 #202124 有区分
+  --table-row-striped-bg: #2c2d30; // 稍浅于背景色
+  
+  // 修正 Element Plus 表格 Hover 背景色变量，确保在深色模式下为暗色
+  --el-table-row-hover-bg-color: var(--table-row-hover-bg);
+  --el-table-striped-bg: var(--table-row-striped-bg);
+
   // 企业级深色背景系统
   --bg-primary: #202124;
   --bg-secondary: #303134;
   --bg-tertiary: #3c4043;
   --bg-surface: #292a2d;
-  --el-table-striped-bg: #292a2d; // 深色模式表格斑马纹背景
 
   // 企业级深色文字系统
   --text-primary: #e8eaed;
@@ -465,6 +476,55 @@ body .el-dialog {
     border-top: 1px solid var(--border-light);
     background-color: var(--bg-secondary);
     text-align: right;
+  }
+}
+
+// =============================================================================
+// 全局 Message Box 样式优化 (确认弹窗)
+// =============================================================================
+body .el-message-box {
+  --el-messagebox-border-radius: 12px;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px 4px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+  
+  // 头部样式
+  .el-message-box__header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-light);
+    background-color: var(--bg-surface);
+    
+    .el-message-box__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+
+  // 内容样式
+  .el-message-box__content {
+    padding: 24px;
+    color: var(--text-primary);
+    background-color: var(--bg-surface);
+  }
+
+  // 底部按钮区样式
+  .el-message-box__btns {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light);
+    background-color: var(--bg-secondary);
+  }
+}
+
+// 深色模式下的 Message Box 覆盖
+.dark .el-message-box {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  
+  .el-message-box__header,
+  .el-message-box__content,
+  .el-message-box__btns {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-primary);
   }
 }
 

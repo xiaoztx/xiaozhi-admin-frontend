@@ -69,6 +69,7 @@
       <el-table
         v-loading="loading"
         :data="configList"
+        row-key="id"
         style="width: 100%"
         class="data-table"
         :header-cell-style="{ background: 'var(--bg-tertiary)' }"
@@ -146,7 +147,7 @@
     >
       <template #header>
         <div class="dialog-header">
-          <el-icon size="22" class="mr-2" :color="isEdit ? '#409EFF' : '#67C23A'">
+          <el-icon size="22" class="mr-2" :color="isEdit ? 'var(--el-color-primary)' : 'var(--el-color-success)'">
             <Edit v-if="isEdit" />
             <Plus v-else />
           </el-icon>
@@ -594,9 +595,9 @@ onMounted(() => {
   }
   
   .tencent-tag {
-    background-color: #e6f7ff;
-    border-color: #91d5ff;
-    color: #1890ff;
+    background-color: var(--el-color-primary-light-9);
+    border-color: var(--el-color-primary-light-5);
+    color: var(--el-color-primary);
   }
 }
 </style>

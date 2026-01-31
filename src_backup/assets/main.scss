@@ -1,0 +1,743 @@
+// 导入Element Plus组件主题样式
+@use './element-theme.scss';
+
+// 企业级设计系统变量
+:root {
+  // 尺寸系统
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 80px;
+  --header-height: 72px;
+
+  // 企业色彩系统
+  --color-primary: #1a73e8;
+  --color-primary-light: #4285f4;
+  --color-primary-dark: #1557b0;
+  --color-success: #34a853;
+  --color-warning: #fbbc04;
+  --color-danger: #ea4335;
+  --color-info: #5f6368;
+
+  // 中性色系统
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #eeeeee;
+  --color-gray-300: #e0e0e0;
+  --color-gray-400: #bdbdbd;
+  --color-gray-500: #9e9e9e;
+  --color-gray-600: #757575;
+  --color-gray-700: #616161;
+  --color-gray-800: #424242;
+  --color-gray-900: #212121;
+
+  // 背景色系统
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f1f3f4;
+  --bg-surface: #ffffff;
+  --bg-overlay: rgba(32, 33, 36, 0.6);
+
+  // 文字颜色系统
+  --text-primary: #202124;
+  --text-secondary: #5f6368;
+  --text-tertiary: #80868b;
+  --text-disabled: #9aa0a6;
+  --text-inverse: #ffffff;
+
+  // 边框系统
+  --border-light: #e8eaed;
+  --border-medium: #dadce0;
+  --border-heavy: #bdc1c6;
+  --border-focus: #1a73e8;
+  --border-primary: #dadce0; // 新增：基础边框色 (对应 medium)
+
+  // 阴影系统（企业级）
+  --shadow-sm: 0 1px 3px rgba(60, 64, 67, 0.08), 0 1px 2px rgba(60, 64, 67, 0.16);
+  --shadow-md: 0 4px 6px rgba(60, 64, 67, 0.1), 0 2px 4px rgba(60, 64, 67, 0.06);
+  --shadow-lg: 0 8px 25px rgba(60, 64, 67, 0.12), 0 4px 10px rgba(60, 64, 67, 0.08);
+  --shadow-xl: 0 16px 40px rgba(60, 64, 67, 0.15);
+
+  // 圆角系统
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  // 间距系统（8px倍数）
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+
+  // 字体系统
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  // 动画系统
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  // 标签页动画
+  .fade-transform-leave-active,
+  .fade-transform-enter-active {
+    transition: all 0.5s;
+  }
+
+  .fade-transform-enter-from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  .fade-transform-leave-to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  // 全局滚动条美化
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(144, 147, 153, 0.3);
+    border-radius: 3px;
+    transition: background 0.2s;
+    
+    &:hover {
+      background: rgba(144, 147, 153, 0.5);
+    }
+  }
+
+  // 暗色模式滚动条
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Global styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+// =============================================================================
+// 表格组件通用修复 (浅色模式 & 深色模式通用)
+// =============================================================================
+// 将这些修复移出 .dark 作用域，确保浅色模式下的固定列也能正确显示
+.el-table {
+  // 覆盖 Element Plus CSS 变量 - 保持与 element-theme.scss 一致
+  --el-table-bg-color: var(--bg-primary);
+  --el-table-tr-bg-color: var(--bg-primary);
+  --el-table-header-bg-color: var(--bg-tertiary);
+  --el-table-border-color: var(--border-primary);
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--text-secondary);
+  
+  // 关键变量：统一控制 Hover 和 选中状态的颜色
+  --el-table-row-hover-bg-color: var(--bg-secondary);
+  --el-table-current-row-bg-color: var(--bg-secondary);
+
+  // 去除固定列的阴影，只在滚动时显示
+  .el-table__fixed-right-patch {
+    background-color: var(--bg-tertiary);
+  }
+
+  // 修复表头固定列背景色不一致的问题
+  .el-table__header {
+    // 强制所有表头单元格（包括普通列和固定列）使用统一背景色
+    th.el-table__cell {
+      background-color: var(--bg-tertiary) !important;
+    }
+    
+    // 专门针对固定列的额外保障，防止权重问题
+    th.el-table-fixed-column--right,
+    th.el-table__fixed-right {
+      background-color: var(--bg-tertiary) !important;
+    }
+  }
+
+  // 修复表体固定列背景色问题
+  .el-table__body {
+    // 强制移除所有单元格的背景过渡，确保左右完全同步，无拖尾
+    tr.el-table__row td {
+      transition: background-color 0s !important;
+    }
+
+    tr.el-table__row {
+      // 1. 常态：固定列使用表格背景色
+      td.el-table-fixed-column--right,
+      td.el-table__fixed-right {
+        background-color: var(--bg-primary);
+      }
+      
+      // 2. 斑马纹行：固定列使用斑马纹背景色
+      &.el-table__row--striped {
+        td.el-table-fixed-column--right,
+        td.el-table__fixed-right {
+          background-color: var(--el-table-striped-bg); // 使用统一变量
+        }
+      }
+
+      // 3. 选中行 (Current Row)：固定列必须同步选中色
+      &.current-row {
+        td.el-table-fixed-column--right,
+        td.el-table__fixed-right {
+          background-color: var(--el-table-current-row-bg-color) !important;
+        }
+      }
+    }
+
+    // 4. Hover 状态同步核心方案：
+    // 禁用 CSS 原生 :hover，统一使用 JS 添加的 .hover-row 类来控制背景色
+    // 这样可以确保主表格和固定列的变色时机完全一致（都等待 JS 事件），消除时间差导致的拖尾感
+    
+    // 4.1 禁用原生 hover
+    tr:hover > td {
+      background-color: inherit !important;
+    }
+
+    // 4.2 启用 .hover-row 类控制 (Element Plus 会在鼠标悬停时给 tr 添加此类)
+    tr.hover-row {
+      > td.el-table__cell,
+      > td.el-table-fixed-column--right,
+      > td.el-table__fixed-right {
+        background-color: var(--el-table-row-hover-bg-color) !important;
+      }
+    }
+  }
+}
+
+// 企业级深色主题
+.dark {
+  // 企业级深色背景系统
+  --bg-primary: #202124;
+  --bg-secondary: #303134;
+  --bg-tertiary: #3c4043;
+  --bg-surface: #292a2d;
+  --el-table-striped-bg: #292a2d; // 深色模式表格斑马纹背景
+
+  // 企业级深色文字系统
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-tertiary: #80868b;
+  --text-disabled: #5f6368;
+
+  // 企业级深色边框系统
+  --border-light: #3c4043;
+  --border-medium: #5f6368;
+  --border-heavy: #80868b;
+  --border-primary: #5f6368; // 新增：暗色模式基础边框色 (对应 medium)
+
+  // 企业级深色阴影（更柔和）
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.5);
+
+  // 全局背景
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+
+  // Element Plus 组件适配
+  .el-card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-primary); // 使用暗色边框变量
+    color: var(--text-primary);
+
+    .el-card__header {
+      background-color: var(--bg-secondary);
+      border-bottom-color: var(--border-primary);
+      color: var(--text-primary);
+    }
+
+    .el-card__body {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+  }
+
+  .el-button {
+    &.el-button--primary {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+
+      &:hover {
+        background-color: var(--color-primary-dark);
+        border-color: var(--color-primary-dark);
+      }
+    }
+
+    &.el-button--text {
+      color: var(--text-secondary);
+
+      &:hover {
+        color: var(--text-primary);
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+    }
+  }
+
+  .el-input {
+    // 适配 wrapper
+    .el-input__wrapper {
+      background-color: var(--bg-tertiary);
+      box-shadow: 0 0 0 1px var(--border-primary) inset;
+      
+      &.is-focus {
+        box-shadow: 0 0 0 1px var(--color-primary) inset;
+      }
+    }
+
+    .el-input__inner {
+      color: var(--text-primary);
+      background-color: transparent !important;
+      box-shadow: none !important;
+      
+      &::placeholder {
+        color: var(--text-tertiary);
+      }
+    }
+
+    // 适配旧版或特殊情况
+    .el-input__inner {
+      border-color: var(--border-primary);
+    }
+  }
+  
+  // 修复深色模式下 textarea 背景色
+  .el-textarea {
+    .el-textarea__inner {
+      background-color: var(--bg-tertiary);
+      box-shadow: 0 0 0 1px var(--border-primary) inset;
+      color: var(--text-primary);
+      
+      &:focus {
+        box-shadow: 0 0 0 1px var(--color-primary) inset;
+      }
+    }
+  }
+
+  .el-select {
+    .el-select__wrapper {
+      background-color: var(--bg-tertiary);
+      box-shadow: 0 0 0 1px var(--border-primary) inset;
+
+      &.is-focused {
+        box-shadow: 0 0 0 1px var(--color-primary) inset;
+      }
+    }
+
+    .el-select__input {
+      color: var(--text-primary);
+    }
+    
+    // 下拉箭头等图标
+    .el-select__suffix {
+      color: var(--text-secondary);
+    }
+  }
+
+  // 移出 .dark 作用域，作为全局默认样式（浅色模式）
+  // 覆盖 Element Plus 默认 Dialog 样式
+  :root .el-dialog {
+    --el-dialog-bg-color: var(--bg-surface);
+    --el-dialog-box-shadow: var(--shadow-xl);
+    --el-dialog-border-radius: var(--radius-lg); // Element Plus 变量覆盖
+    border-radius: var(--radius-lg) !important; // 强制覆盖
+    overflow: hidden;
+    box-shadow: var(--shadow-xl) !important; // 强制覆盖
+
+    .el-dialog__header {
+      margin-right: 0;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-light);
+      
+      .el-dialog__title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+    }
+
+    .el-dialog__body {
+      padding: 24px;
+      color: var(--text-primary);
+    }
+
+    .el-dialog__footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-light);
+      background-color: var(--bg-secondary);
+    }
+  }
+
+  // 针对深色模式的 Dialog 覆盖
+  .dark .el-dialog {
+    --el-dialog-bg-color: var(--bg-secondary);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+
+    .el-dialog__header {
+      background-color: var(--bg-secondary);
+      border-bottom-color: var(--border-primary);
+    }
+
+    .el-dialog__body {
+      background-color: var(--bg-secondary);
+    }
+
+    .el-dialog__footer {
+      background-color: var(--bg-secondary);
+      border-top-color: var(--border-primary);
+    }
+  }
+}
+
+// =============================================================================
+// 全局 Dialog 样式优化
+// =============================================================================
+// 使用 body 选择器确保权重足够覆盖 Element Plus 默认样式，但保持代码整洁
+body .el-dialog {
+  --el-dialog-border-radius: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px 4px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+
+  .el-dialog__header {
+    margin-right: 0;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-light);
+    background-color: var(--bg-surface);
+    
+    .el-dialog__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .el-dialog__headerbtn {
+      top: 20px;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 24px;
+    color: var(--text-primary);
+    background-color: var(--bg-surface);
+  }
+
+  .el-dialog__footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light);
+    background-color: var(--bg-secondary);
+    text-align: right;
+  }
+}
+
+// =============================================================================
+// 全局统计卡片样式 (Stats Cards)
+// =============================================================================
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+
+  .stat-card {
+    border-radius: 16px;
+    padding: 24px;
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .stat-content {
+      z-index: 2;
+      position: relative;
+      
+      .stat-label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        opacity: 0.9;
+      }
+
+      .stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        font-family: 'Monaco', 'Menlo', sans-serif;
+      }
+    }
+
+    .stat-icon-bg {
+      position: absolute;
+      right: -10px;
+      bottom: -15px;
+      opacity: 0.15;
+      transform: rotate(-15deg);
+      z-index: 1;
+      transition: all 0.3s ease;
+
+      .el-icon {
+        font-size: 90px;
+      }
+    }
+    
+    &:hover .stat-icon-bg {
+      transform: rotate(0deg) scale(1.1);
+      opacity: 0.25;
+    }
+
+    // 颜色主题 (亮色模式 & 暗色模式适配)
+    &.card-blue {
+      background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+      color: #0050b3;
+      .stat-icon-bg { color: #1890ff; }
+
+      .dark & {
+        background: linear-gradient(135deg, #16365c 0%, #102a46 100%);
+        color: #e6f4ff;
+        .stat-icon-bg { color: #3c9ae8; opacity: 0.2; }
+      }
+    }
+
+    &.card-purple {
+      background: linear-gradient(135deg, #f9f0ff 0%, #efdbff 100%);
+      color: #531dab;
+      .stat-icon-bg { color: #722ed1; }
+
+      .dark & {
+        background: linear-gradient(135deg, #302046 0%, #241836 100%);
+        color: #f5edff;
+        .stat-icon-bg { color: #955ce6; opacity: 0.2; }
+      }
+    }
+
+    &.card-green {
+      background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+      color: #389e0d;
+      .stat-icon-bg { color: #52c41a; }
+
+      .dark & {
+        background: linear-gradient(135deg, #1c3816 0%, #152910 100%);
+        color: #e6ffdb;
+        .stat-icon-bg { color: #6abe39; opacity: 0.2; }
+      }
+    }
+
+    &.card-orange {
+      background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+      color: #d46b08;
+      .stat-icon-bg { color: #fa8c16; }
+
+      .dark & {
+        background: linear-gradient(135deg, #462d16 0%, #362212 100%);
+        color: #fff3e0;
+        .stat-icon-bg { color: #e8a643; opacity: 0.2; }
+      }
+    }
+  }
+}
+
+// 自定义滚动条
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}
+
+// 响应式设计
+@media screen and (max-width: 768px) {
+  .admin-layout {
+    .admin-sidebar {
+      width: var(--sidebar-width);
+      position: fixed;
+      top: 0;
+      left: calc(-1 * var(--sidebar-width));
+      height: 100vh;
+      z-index: 1050;
+      transition: left var(--transition-normal);
+      box-shadow: var(--shadow-lg);
+
+      &.mobile-open {
+        left: 0;
+      }
+    }
+
+    .main-content {
+      .admin-header {
+        .mobile-menu-btn {
+          display: block !important;
+        }
+      }
+    }
+  }
+
+  .mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-normal);
+
+    &.active {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+
+// 平板响应式优化
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .admin-sidebar {
+    width: 240px;
+
+    &.collapsed {
+      width: 64px;
+    }
+  }
+
+  :root {
+    --sidebar-width: 200px;
+  }
+}
+
+// 大屏幕优化
+@media screen and (min-width: 1440px) {
+  :root {
+    --sidebar-width: 220px;
+  }
+
+  .admin-sidebar {
+    &.collapsed {
+      width: 80px;
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .admin-layout {
+    .main-content {
+      .header {
+        padding: 0 12px;
+
+        .breadcrumb {
+          display: none;
+        }
+
+        .header-actions {
+          .notification-badge {
+            display: none;
+          }
+
+          .user-info .username {
+            display: none;
+          }
+        }
+      }
+
+      .content {
+        padding: 12px;
+      }
+    }
+  }
+
+  .stats-cards {
+    .stat-card {
+      .stat-icon {
+        width: 40px !important;
+        height: 40px !important;
+
+        .el-icon {
+          font-size: 20px !important;
+        }
+      }
+
+      .stat-content {
+        .stat-value {
+          font-size: 18px !important;
+        }
+
+        .stat-label {
+          font-size: 12px !important;
+        }
+      }
+    }
+  }
+}

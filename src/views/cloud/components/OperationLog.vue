@@ -336,7 +336,7 @@ const formatJson = (jsonStr: string) => {
 <style scoped lang="scss">
 .operation-log-container {
   padding: 20px;
-  background-color: #fff;
+  background-color: var(--bg-primary); // 使用全局变量
   border-radius: 4px;
   min-height: 600px;
   
@@ -359,7 +359,7 @@ const formatJson = (jsonStr: string) => {
   
   .expand-detail {
     padding: 20px;
-    background-color: #f8f9fa;
+    background-color: var(--bg-tertiary); // 使用全局变量
     border-radius: 4px;
     
     .params-box {
@@ -368,11 +368,11 @@ const formatJson = (jsonStr: string) => {
       .params-title {
         font-weight: bold;
         margin-bottom: 8px;
-        color: #606266;
+        color: var(--text-secondary); // 使用全局变量
       }
       
       .params-code {
-        background-color: #282c34;
+        background-color: #282c34; // 代码块保持深色背景
         color: #abb2bf;
         padding: 12px;
         border-radius: 4px;
@@ -381,6 +381,7 @@ const formatJson = (jsonStr: string) => {
         overflow-x: auto;
         white-space: pre-wrap;
         word-wrap: break-word;
+        border: 1px solid var(--border-light); // 添加边框适配
       }
     }
   }

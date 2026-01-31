@@ -366,7 +366,7 @@ onMounted(() => {
       &.bandwidth { background: var(--el-color-warning-light-9); color: var(--color-warning); }
       &.disk { background: var(--el-color-info-light-9); color: var(--color-info); }
     }
-    
+
     .stat-info {
       flex: 1;
       min-width: 0;
@@ -545,15 +545,24 @@ onMounted(() => {
 }
 
 .log-content {
-  h4 {
-    margin: 0 0 4px 0;
-    font-size: 14px;
-    color: var(--text-primary);
+    h4 {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
   }
-  p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--text-secondary);
+  
+  :global(.dark) {
+    .stat-item .stat-icon {
+      &.cpu { background: rgba(64, 158, 255, 0.15); }
+      &.memory { background: rgba(103, 194, 58, 0.15); }
+      &.bandwidth { background: rgba(230, 162, 60, 0.15); }
+      &.disk { background: rgba(144, 147, 153, 0.15); }
+    }
   }
-}
 </style>

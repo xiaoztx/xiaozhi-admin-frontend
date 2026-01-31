@@ -1,0 +1,418 @@
+<template>
+  <div class="tags-view-container">
+    <el-scrollbar class="tags-view-wrapper" ref="scrollPaneRef">
+      <template v-for="tag in visitedViews" :key="tag.path">
+        <router-link
+          v-if="!tag.meta?.hidden"
+          :to="{ path: tag.path, query: tag.query }"
+          class="tags-view-item"
+          :class="isActive(tag) ? 'active' : ''"
+          @contextmenu.prevent="openMenu(tag, $event)"
+        >
+          {{ tag.title }}
+          <el-icon
+            v-if="!isAffix(tag)"
+            class="el-icon-close"
+            @click.prevent.stop="closeSelectedTag(tag)"
+          >
+            <Close />
+          </el-icon>
+        </router-link>
+      </template>
+    </el-scrollbar>
+
+    <!-- 右侧操作按钮 -->
+    <el-dropdown trigger="click" class="tags-options" @command="handleTags">
+      <div class="tags-options-btn">
+        <el-icon><ArrowDown /></el-icon>
+      </div>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="refresh">
+            <el-icon><Refresh /></el-icon>刷新当前
+          </el-dropdown-item>
+          <el-dropdown-item command="close">
+            <el-icon><Close /></el-icon>关闭当前
+          </el-dropdown-item>
+          <el-dropdown-item command="closeOthers">
+            <el-icon><CircleClose /></el-icon>关闭其他
+          </el-dropdown-item>
+          <el-dropdown-item command="closeLeft">
+            <el-icon><Back /></el-icon>关闭左侧
+          </el-dropdown-item>
+          <el-dropdown-item command="closeRight">
+            <el-icon><Right /></el-icon>关闭右侧
+          </el-dropdown-item>
+          <el-dropdown-item command="closeAll" divided>
+            <el-icon><CircleClose /></el-icon>关闭所有
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+
+    <ul v-show="visible" :style="{ left: left + 'px', top: top + 'px' }" class="contextmenu">
+      <li @click="refreshSelectedTag(selectedTag)">刷新页面</li>
+      <li v-if="!isAffix(selectedTag)" @click="closeSelectedTag(selectedTag)">关闭当前</li>
+      <li @click="closeOthersTags">关闭其他</li>
+      <li @click="closeAllTags(selectedTag)">关闭所有</li>
+    </ul>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, watch, onMounted, ref, nextTick, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useTagsViewStore } from '@/stores/tagsView'
+import { Close, ArrowDown, CircleClose, Back, Right, Refresh } from '@element-plus/icons-vue'
+import type { TagView } from '@/stores/tagsView'
+
+const tagsViewStore = useTagsViewStore()
+const route = useRoute()
+const router = useRouter()
+const scrollPaneRef = ref()
+const visible = ref(false)
+const top = ref(0)
+const left = ref(0)
+const selectedTag = ref<TagView>({})
+const reload = inject('reload') as Function
+
+const visitedViews = computed(() => tagsViewStore.visitedViews)
+
+watch(visible, (value) => {
+  if (value) {
+    document.body.addEventListener('click', closeMenu)
+  } else {
+    document.body.removeEventListener('click', closeMenu)
+  }
+})
+
+function openMenu(tag: TagView, e: MouseEvent) {
+  const menuMinWidth = 105
+  const offsetLeft = scrollPaneRef.value.$el.getBoundingClientRect().left
+  const offsetWidth = scrollPaneRef.value.$el.offsetWidth
+  const maxLeft = offsetWidth - menuMinWidth
+  const left15 = e.clientX - offsetLeft + 15
+
+  if (left15 > maxLeft) {
+    left.value = maxLeft
+  } else {
+    left.value = left15
+  }
+
+  top.value = e.clientY - 60
+  visible.value = true
+  selectedTag.value = tag
+}
+
+function closeMenu() {
+  visible.value = false
+}
+
+function handleTags(command: string) {
+  const tag = isActive(selectedTag.value) ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || selectedTag.value)
+  
+  switch (command) {
+    case 'refresh':
+      refreshSelectedTag(tag)
+      break
+    case 'close':
+      closeSelectedTag(tag)
+      break
+    case 'closeOthers':
+      closeOthersTags()
+      break
+    case 'closeAll':
+      closeAllTags(tag)
+      break
+    case 'closeLeft':
+      closeLeftTags()
+      break
+    case 'closeRight':
+      closeRightTags()
+      break
+  }
+}
+
+function refreshSelectedTag(view: TagView) {
+  tagsViewStore.delCachedView(view)
+  if (view.path === route.path) {
+    reload()
+  } else {
+    router.push(view.path!)
+  }
+}
+
+function closeSelectedTag(view: TagView) {
+  tagsViewStore.delView(view).then((res: any) => {
+    if (isActive(view)) {
+      toLastView(res.visitedViews, view)
+    }
+  })
+}
+
+function closeOthersTags() {
+  const tag = selectedTag.value.path ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || visitedViews.value[0])
+  if (!tag) return
+  
+  router.push(tag)
+  tagsViewStore.delOthersViews(tag).then(() => {
+    // 刷新
+  })
+}
+
+function closeLeftTags() {
+  const tag = selectedTag.value.path ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || visitedViews.value[0])
+  if (!tag) return
+  
+  tagsViewStore.delLeftViews(tag).then((res: any) => {
+    if (!res.visitedViews.find((i: any) => i.path === route.path)) {
+      toLastView(res.visitedViews, tag)
+    }
+  })
+}
+
+function closeRightTags() {
+  const tag = selectedTag.value.path ? selectedTag.value : (visitedViews.value.find(v => v.path === route.path) || visitedViews.value[0])
+  if (!tag) return
+
+  tagsViewStore.delRightViews(tag).then((res: any) => {
+    if (!res.visitedViews.find((i: any) => i.path === route.path)) {
+      toLastView(res.visitedViews, tag)
+    }
+  })
+}
+
+function closeAllTags(view: TagView) {
+  tagsViewStore.delAllViews().then((res: any) => {
+    if (res.visitedViews.some((tag: TagView) => tag.path === view.path)) {
+      return
+    }
+    toLastView(res.visitedViews, view)
+  })
+}
+
+function isActive(tag: TagView) {
+  return tag.path === route.path
+}
+
+function isAffix(tag: TagView) {
+  return tag.meta?.affix
+}
+
+function addTags() {
+  const { name } = route
+  if (name) {
+    tagsViewStore.addView(route)
+  }
+}
+
+function toLastView(visitedViews: TagView[], view: TagView) {
+  const latestView = visitedViews.slice(-1)[0]
+  if (latestView) {
+    router.push(latestView.path!)
+  } else {
+    // now the default is to redirect to the home page if there is no tags-view,
+    // you can adjust it according to your needs.
+    if (view.name === 'Dashboard') {
+      // to reload home page
+      router.replace({ path: '/redirect' + view.fullPath })
+    } else {
+      router.push('/')
+    }
+  }
+}
+
+watch(
+    () => route.path,
+    () => {
+      addTags()
+      moveToCurrentTag()
+    }
+  )
+
+  onMounted(() => {
+    initTags()
+    addTags()
+  })
+
+  function initTags() {
+    const affixTags: TagView[] = [
+      {
+        path: '/',
+        meta: { title: '首页', affix: true },
+        fullPath: '/',
+        name: 'Dashboard'
+      }
+    ]
+    
+    for (const tag of affixTags) {
+      // Must have tag name
+      if (tag.name) {
+        tagsViewStore.addVisitedView(tag)
+      }
+    }
+  }
+
+  function moveToCurrentTag() {
+    nextTick(() => {
+      const tags = document.querySelectorAll('.tags-view-item')
+      for (const tag of tags) {
+        if ((tag as any).to?.path === route.path) {
+          scrollPaneRef.value.setScrollTop(0)
+          // 简单实现：将滚动条滚动到当前标签
+          // 由于 element-plus scrollbar 的限制，这里可能需要更复杂的计算
+          // 但通常水平滚动会自动跟随焦点，或者我们可以手动计算 left
+          
+          // 更好的方式是获取 el-scrollbar 的 wrapRef 并设置 scrollLeft
+          const wrap = scrollPaneRef.value.wrapRef
+          if (wrap) {
+            const tagLeft = (tag as HTMLElement).offsetLeft
+            const tagWidth = (tag as HTMLElement).offsetWidth
+            const containerWidth = wrap.offsetWidth
+            
+            // 保持当前标签在可视区域中间
+            wrap.scrollLeft = tagLeft - containerWidth / 2 + tagWidth / 2
+          }
+          break
+        }
+      }
+    })
+  }
+</script>
+
+<style lang="scss" scoped>
+.tags-view-container {
+  height: 40px;
+  width: 100%;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.04); // 增强底部阴影
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 99; // 确保阴影在内容之上
+
+  .tags-view-wrapper {
+    flex: 1; // 占据剩余空间
+    overflow: hidden; // 防止溢出
+    
+    :deep(.el-scrollbar__view) {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding: 0 16px;
+    }
+
+    .tags-view-item {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      height: 32px;
+      line-height: 32px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      background: transparent;
+      padding: 0 12px;
+      font-size: 13px;
+      margin-right: 6px;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+      
+      &:hover {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      &.active {
+        background-color: var(--bg-secondary);
+        color: var(--color-primary);
+        border-color: var(--border-light);
+        font-weight: 500;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+        &::before {
+          content: '';
+          background: var(--color-primary);
+          display: inline-block;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          position: relative;
+          margin-right: 8px;
+        }
+      }
+
+      .el-icon-close {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        margin-left: 6px;
+        font-size: 10px;
+        color: var(--text-tertiary);
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.1);
+          color: var(--text-primary);
+        }
+      }
+    }
+  }
+  
+  // 右侧操作按钮样式
+  .tags-options {
+    height: 100%;
+    
+    .tags-options-btn {
+      width: 40px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-left: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      background-color: var(--bg-primary);
+      z-index: 10;
+      
+      &:hover {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  .contextmenu {
+    margin: 0;
+    background: var(--bg-primary);
+    z-index: 3000;
+    position: absolute;
+    list-style-type: none;
+    padding: 5px 0;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-primary);
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-light);
+
+    li {
+      margin: 0;
+      padding: 7px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: var(--bg-tertiary);
+        color: var(--color-primary);
+      }
+    }
+  }
+}
+</style>

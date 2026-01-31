@@ -160,12 +160,12 @@ const handleLogin = async () => {
 const handleGuestLogin = async () => {
   guestLoading.value = true
   try {
-    const response = await axios.post('http://localhost:8081/api/v1/auth/guest-login')
+    const response = await axios.post('/api/v1/auth/guest-login')
     
     const { token, user } = response.data
     
     // 存储 token 和用户信息
-    localStorage.setItem('token', token)
+    userStore.setToken(token)
     userStore.setUser(user)
     
     ElMessage.success('游客登录成功')

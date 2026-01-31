@@ -124,13 +124,12 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('token')
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const userStore = useUserStore()
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
 
-  if (requiresAuth && !token) {
+  if (requiresAuth && !userStore.token) {
     next('/login')
-  } else if (token && to.path === '/login') {
+  } else if (userStore.token && to.path === '/login') {
     // 如果已登录，访问登录页重定向到首页
     next('/')
   } else {

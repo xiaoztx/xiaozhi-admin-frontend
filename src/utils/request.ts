@@ -1,5 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+import router from '@/router'
 
 // 扩展 axios 类型以支持自定义响应结构
 declare module 'axios' {
@@ -16,9 +18,9 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
+    const userStore = useUserStore()
+    if (userStore.token) {
+      config.headers['Authorization'] = `Bearer ${userStore.token}`
     }
     return config
   },
@@ -37,11 +39,11 @@ service.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // 未授权，清除 token 并跳转登录
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          // 这里可以使用 router 跳转，或者直接 reload
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login'
+          const userStore = useUserStore()
+          userStore.clearUser()
+          
+          if (router.currentRoute.value.path !== '/login') {
+            router.push('/login')
           }
           break
         default:
