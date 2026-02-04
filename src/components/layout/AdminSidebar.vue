@@ -152,7 +152,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
-import { useSystemStore } from '@/stores/system'
 import { useUserStore } from '@/stores/user'
 import {
   House,
@@ -160,7 +159,6 @@ import {
   DocumentCopy,
   ArrowRight,
   Bell,
-  Close,
   Cloudy,
   Operation,
   Fold,
@@ -169,12 +167,10 @@ import {
 
 const route = useRoute()
 const themeStore = useThemeStore()
-const systemStore = useSystemStore()
 const userStore = useUserStore()
 
 const isCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
-const isMobile = computed(() => window.innerWidth <= 768)
 
 const toggleSidebar = () => {
   themeStore.toggleSidebar()
@@ -261,10 +257,6 @@ watch(() => route.path, (newPath) => {
     }
   })
 }, { immediate: true })
-
-const closeMobileMenu = () => {
-  themeStore.closeMobileMenu()
-}
 
 const handleMouseEnter = () => {
   // 暂时保留空实现，以防未来需要

@@ -27,27 +27,48 @@
           <el-tooltip placement="top" content="关键操作包括：开机、关机、重启、重置密码、修改安全组/防火墙、续费">
             <el-icon style="margin-right: 8px; color: #909399; cursor: help"><InfoFilled /></el-icon>
           </el-tooltip>
-          <el-select v-model="actionType" placeholder="操作类型" style="width: 120px" @change="handleActionTypeChange">
-            <el-option label="全部操作" value="" />
-            <el-option label="关键操作" value="critical" />
-            <el-option label="开机/启动" value="start" />
-            <el-option label="关机/停止" value="stop" />
+          <el-select v-model="actionType" placeholder="操作类型" style="width: 140px" @change="handleActionTypeChange">
+            <el-option label="全部操作" value="critical" />
+            <el-option label="开机" value="start" />
+            <el-option label="关机" value="stop" />
             <el-option label="重启" value="reboot" />
+            <el-option label="重置密码" value="password" />
+            <el-option label="重置系统" value="reset" />
+            <el-option label="安全组/防火墙" value="security" />
+            <el-option label="续费" value="renew" />
           </el-select>
         </div>
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索实例ID/操作人/类型/IP"
-          :prefix-icon="Search"
-          clearable
-          style="width: 300px"
-          @input="handleSearchInput"
-          @keyup.enter="handleSearch"
-        />
-        <el-button type="primary" :icon="Refresh" circle @click="handleRefresh" style="margin-left: 12px" />
-        <el-tooltip content="手动同步云端日志" placement="top">
-          <el-button type="warning" :icon="Download" circle @click="handleSync" :loading="syncLoading" />
-        </el-tooltip>
+        
+        <!-- 搜索与操作区 -->
+        <div class="search-operation-box">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索实例ID/操作人/类型/IP"
+            style="width: 240px"
+            clearable
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          
+          <el-tooltip content="手动同步最近60天的云端日志" placement="top">
+            <el-button 
+              type="primary" 
+              plain 
+              :icon="Refresh" 
+              :loading="syncLoading" 
+              @click="handleSync"
+              style="margin-left: 12px"
+            >
+              同步
+            </el-button>
+          </el-tooltip>
+
+          <el-button :icon="Download" @click="handleExport" style="margin-left: 12px">导出</el-button>
+        </div>
       </div>
     </div>
 
@@ -63,20 +84,30 @@
         <template #default="props">
           <div class="expand-detail">
             <el-descriptions title="详细信息" :column="2" border size="small">
-              <el-descriptions-item label="Request ID">{{ props.row.request_id }}</el-descriptions-item>
-              <el-descriptions-item label="Event Source">{{ props.row.event_source }}</el-descriptions-item>
-              <el-descriptions-item label="Region">{{ props.row.region }}</el-descriptions-item>
-              <el-descriptions-item label="Resource Name">{{ props.row.resource_name }}</el-descriptions-item>
-              <el-descriptions-item label="Error Code" v-if="props.row.error_code">
-                <el-tag type="danger">{{ props.row.error_code }}</el-tag>
+              <el-descriptions-item label="事件名称">{{ props.row.event_name }}</el-descriptions-item>
+              <el-descriptions-item label="事件源">{{ props.row.event_source }}</el-descriptions-item>
+              
+              <el-descriptions-item label="请求 ID">{{ props.row.request_id }}</el-descriptions-item>
+              <el-descriptions-item label="源 IP 地址">
+                {{ props.row.source_ip }} 
+                <!-- IP归属地需后端支持 -->
               </el-descriptions-item>
-              <el-descriptions-item label="Error Message" v-if="props.row.error_message">
+
+              <el-descriptions-item label="操作者">
+                {{ props.row.account_id }} ({{ props.row.user_name || '-' }})
+              </el-descriptions-item>
+              <el-descriptions-item label="资源地域">{{ props.row.region }}</el-descriptions-item>
+              
+              <el-descriptions-item label="CAM 错误码">{{ props.row.error_code || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="User Agent">{{ props.row.user_agent }}</el-descriptions-item>
+
+              <el-descriptions-item label="错误信息" :span="2" v-if="props.row.error_message">
                 {{ props.row.error_message }}
               </el-descriptions-item>
             </el-descriptions>
             
-            <div class="params-box" v-if="props.row.request_parameters">
-              <div class="params-title">Request Parameters:</div>
+            <div class="params-box" v-if="props.row.request_parameters && props.row.request_parameters !== '{}' && props.row.request_parameters !== 'null'">
+              <div class="params-title">请求参数:</div>
               <pre class="params-code">{{ formatJson(props.row.request_parameters) }}</pre>
             </div>
           </div>
@@ -89,17 +120,23 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="user_name" label="操作人" width="150">
+      <el-table-column prop="event_name" label="操作类型" width="200" show-overflow-tooltip>
         <template #default="scope">
-          <span>{{ scope.row.user_name || scope.row.account_id }}</span>
+          <el-tag :type="getOperationTagType(scope.row.event_name)" effect="light">
+            {{ getOperationLabel(scope.row.event_name) }}
+          </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column prop="event_name" label="操作类型" width="200" show-overflow-tooltip />
-
-      <el-table-column prop="resource_id" label="实例ID" min-width="180">
+      <el-table-column label="操作者" width="180">
         <template #default="scope">
-          <span class="mono-font">{{ scope.row.resource_id }}</span>
+          <span>{{ scope.row.account_id }} ({{ scope.row.user_name || '-' }})</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="资源信息" min-width="220">
+        <template #default="scope">
+          <div>{{ scope.row.resource_name || '-' }}</div>
         </template>
       </el-table-column>
 
@@ -136,11 +173,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Search, Refresh, Download, InfoFilled } from '@element-plus/icons-vue'
+import { Search, Download, InfoFilled, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import { getOperationLogs, syncOperationLogs, type OperationLog } from '@/api/operation-log'
-import { debounce } from 'lodash-es'
 
 // 状态定义
 const loading = ref(false)
@@ -155,6 +191,42 @@ const dateRange = ref('week') // 默认近7天
 const customDateRange = ref<[Date, Date] | null>(null)
 const searchKeyword = ref('')
 const actionType = ref('critical') // 默认选中关键操作
+// const progressVisible = ref(false)
+// const progressPercent = ref(0)
+// const progressMessage = ref('准备开始同步...')
+// const progressStatus = ref<'' | 'success' | 'warning' | 'exception'>('') // 修复类型定义
+
+// 操作类型映射 (用于 Tag 展示)
+const getOperationTagType = (name: string) => {
+  const n = name.toLowerCase()
+  if (n.includes('start') || n.includes('启动') || n.includes('开机')) return 'success'
+  if (n.includes('stop') || n.includes('停止') || n.includes('关机')) return 'danger'
+  if (n.includes('reboot') || n.includes('restart') || n.includes('重启')) return 'warning'
+  if (n.includes('security') || n.includes('firewall') || n.includes('安全组') || n.includes('防火墙')) return 'warning'
+  if (n.includes('password') || n.includes('密码')) return 'danger'
+  if (n.includes('resetinstance')) return 'danger' // 新增：重置系统为高危操作
+  if (n.includes('renew') || n.includes('续费')) return 'info'
+  return 'info'
+}
+
+const getOperationLabel = (name: string) => {
+  // 简单的映射，让展示更友好
+  const n = name.toLowerCase()
+  if (n.includes('start') || n.includes('启动') || n.includes('开机')) return '开机'
+  if (n.includes('stop') || n.includes('停止') || n.includes('关机')) return '关机'
+  if (n.includes('reboot') || n.includes('restart') || n.includes('重启')) return '重启'
+  if (n.includes('security') || n.includes('firewall') || n.includes('安全组') || n.includes('防火墙')) {
+    if (n.includes('create') || n.includes('add')) return '添加防火墙规则'
+    if (n.includes('delete') || n.includes('remove')) return '删除防火墙规则'
+    if (n.includes('modify') || n.includes('update')) return '修改防火墙规则'
+    return '修改安全组/防火墙'
+  }
+  if (n.includes('resetinstance') && !n.includes('password')) return '重置应用/系统'
+  if (n.includes('password') || n.includes('密码')) return '重置密码'
+  if (n.includes('renew') || n.includes('续费')) return '续费'
+  if (n.includes('dns')) return '修改域名解析'
+  return name // 兜底
+}
 
 // 日期快捷选项
 const shortcuts = [
@@ -223,6 +295,7 @@ const fetchData = async () => {
     }
     
     const res = await getOperationLogs(params)
+    // console.log('Operation Logs Data:', res)
     tableData.value = res.list
     total.value = res.total
   } catch (error) {
@@ -250,62 +323,42 @@ const handleActionTypeChange = () => {
   fetchData()
 }
 
-// 防抖搜索
-const handleSearchInput = debounce(() => {
-  currentPage.value = 1
-  fetchData()
-}, 300)
-
 const handleSearch = () => {
   currentPage.value = 1
   fetchData()
 }
 
-const handleRefresh = () => {
-  fetchData()
-}
+// 移除未使用的 handleSearchInput 和 handleRefresh
+// const handleSearchInput = () => { ... }
+// const handleRefresh = () => { ... }
 
+// 手动同步逻辑
 const handleSync = async () => {
+  if (syncLoading.value) return
   syncLoading.value = true
   try {
-    const res: any = await syncOperationLogs()
-    
-    // 详细结果打印到控制台，供用户排查
-    console.log('=== Cloud Audit Sync Result ===')
-    console.log('Time:', new Date().toLocaleString())
-    if (Array.isArray(res)) {
-      res.forEach((item: any) => {
-        console.log(`Config: ${item.config_name}`)
-        console.log(`- Total Found: ${item.total_found}`)
-        console.log(`- Total Saved: ${item.total_saved}`)
-        console.log(`- Region Stats:`, item.region_stats)
-        if (item.errors && item.errors.length > 0) {
-          console.error(`- Errors:`, item.errors)
-        }
-      })
-      
-      const totalFound = res.reduce((sum: number, item: any) => sum + item.total_found, 0)
-      const totalSaved = res.reduce((sum: number, item: any) => sum + item.total_saved, 0)
-      
-      if (totalFound === 0) {
-        ElMessage.warning('同步完成，但未发现新的操作记录。请检查控制台详情。')
-      } else {
-        ElMessage.success(`同步完成，发现 ${totalFound} 条记录，入库 ${totalSaved} 条`)
-      }
-    } else {
-      console.log('Result:', res)
-      ElMessage.success('同步完成')
-    }
-    console.log('===============================')
-    
-    // 刷新列表
-    fetchData()
+    // 默认同步最近 60 天的增量日志
+    await syncOperationLogs(60)
+    ElMessage.success('同步任务已触发，请稍后刷新列表查看')
+    // 延迟 2 秒后自动刷新列表，给后端一点处理时间
+    setTimeout(() => {
+      fetchData()
+    }, 2000)
   } catch (error) {
-    console.error('Sync failed:', error)
-    // error handled by interceptor
+    console.error('同步失败:', error)
+    ElMessage.error('同步请求失败')
   } finally {
     syncLoading.value = false
   }
+}
+
+// 移除手动同步逻辑
+// const handleSyncClick = () => { ... }
+// const handleSyncCommand = (days: string) => { ... }
+// const handleSync = async (days: number = 7) => { ... }
+
+const handleExport = () => {
+  ElMessage.info('导出功能开发中...')
 }
 
 const handleSizeChange = (val: number) => {
@@ -354,6 +407,11 @@ const formatJson = (jsonStr: string) => {
     .right-panel {
       display: flex;
       align-items: center;
+      
+      .search-operation-box {
+        display: flex;
+        align-items: center;
+      }
     }
   }
   

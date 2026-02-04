@@ -1,7 +1,7 @@
 <template>
   <div class="ecs-detail-wrapper">
     <!-- 1. 顶部导航与状态 -->
-    <el-page-header @back="router.back()" class="page-header" v-loading="loading">
+    <el-page-header @back="router.back()" title="返回" class="page-header" v-loading="loading">
       <template #content>
         <div class="header-content">
           <span class="instance-name">{{ server?.instance_name }}</span>

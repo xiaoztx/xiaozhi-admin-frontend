@@ -9,12 +9,14 @@ export interface OperationLog {
   resource_name: string
   region: string
   account_id: string
+  secret_id?: string // 新增
   user_name: string
   source_ip: string
+  user_agent?: string // 新增
   result: string
-  error_code: string
-  error_message: string
-  request_parameters: string
+  error_code?: string
+  error_message?: string
+  request_parameters?: string
 }
 
 export interface LogQueryParams {
@@ -37,6 +39,6 @@ export const getOperationLogs = (params: LogQueryParams) => {
 }
 
 // 手动同步
-export const syncOperationLogs = () => {
-  return request.post('/operation-log/sync')
+export const syncOperationLogs = (days?: number) => {
+  return request.post('/operation-log/sync', { days })
 }

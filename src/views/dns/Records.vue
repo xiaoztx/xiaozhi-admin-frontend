@@ -368,19 +368,28 @@ const loadData = async () => {
       currentDomain.value = res.domain.domain_name
     }
     
-    // 尝试从第一条记录获取域名信息（如果后端有返回）或者需要额外接口
-    // 这里简单处理，如果列表有数据，取 domain.domain_name (如果后端做了 preload)
-    // 或者我们直接在 url query 里传 domainName 会更方便，目前暂不处理 currentDomain
-  } catch (error) {
+    // 如果没有搜索关键字，说明是全量同步，显示成功提示
+    if (!searchQuery.value && res.list) {
+       // 这里可以加一个防抖，或者仅在手动刷新时提示，但需求说"每当用户进入...或刷新...给出已同步状态提示"
+       // 进入页面时也会触发 loadData，所以这里提示是合理的，但为了体验，最好区分自动加载和手动刷新。
+       // 不过 loadData 是通用的，这里简单处理，如果是用户触发的刷新，外部已经有提示了。
+       // 需求要求"给出已同步状态提示"，我们可以加一个状态标签或者 Message。
+       // 外部 handleRefresh 已经有 ElMessage.success('刷新成功')，但这里是数据加载层面。
+       // 我们可以在这里不做额外提示，依赖 handleRefresh 的提示。
+       // 但需求第4点：触发前端视图实时重渲染...并给出“已同步”状态提示。
+       // 我们可以加一个小的文本提示在表格上方或者更新时间。
+    }
+  } catch (error: any) {
     console.error(error)
+    ElMessage.error(error.message || '数据同步失败')
   } finally {
     loading.value = false
   }
 }
 
-const handleRefresh = () => {
-  loadData()
-  ElMessage.success('刷新成功')
+const handleRefresh = async () => {
+  await loadData()
+  ElMessage.success('已同步最新解析记录')
 }
 
 const handleSizeChange = (val: number) => {
@@ -496,8 +505,11 @@ const handleSubmit = async () => {
   })
 }
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await loadData()
+  if (!searchQuery.value) {
+    ElMessage.success('已同步最新解析记录')
+  }
 })
 </script>
 
