@@ -1,22 +1,27 @@
 <template>
   <div class="admin-header">
+    <!-- Logo区域 (从侧栏移动到此处) -->
+    <div class="logo-section">
+      <div class="logo-wrapper">
+        <div class="logo-icon" v-if="!logoUrl">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <img v-else :src="logoUrl" class="logo-img" alt="Logo" />
+        <div class="logo-text">
+          <div class="brand-name">{{ siteName }}</div>
+          <div class="brand-subtitle">Admin System</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 移动端菜单按钮 -->
     <div class="mobile-menu-btn" @click="toggleMobileMenu">
       <el-icon><Menu /></el-icon>
     </div>
 
-    <!-- 侧栏折叠按钮 -->
-    <button
-      v-if="!isMobile"
-      class="sidebar-toggle-btn"
-      @click="toggleSidebar"
-      :aria-label="isSidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-      :class="{ collapsed: isSidebarCollapsed }"
-    >
-      <el-icon>
-        <Menu />
-      </el-icon>
-    </button>
+    <!-- 侧栏折叠按钮 (已移除) -->
 
     <!-- 右侧操作区 -->
     <div class="header-actions">
@@ -87,6 +92,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import { useSystemStore } from '@/stores/system'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Menu,
@@ -104,6 +110,10 @@ import {
 const router = useRouter()
 const themeStore = useThemeStore()
 const userStore = useUserStore()
+const systemStore = useSystemStore()
+
+const siteName = computed(() => systemStore.siteName)
+const logoUrl = computed(() => systemStore.logoUrl)
 
 const username = computed(() => userStore.userInfo.username || '管理员')
 const userAvatar = computed(() => userStore.userInfo.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
@@ -194,6 +204,7 @@ const handleLogout = async () => {
     justify-content: center;
     transition: all 0.3s ease;
     color: var(--text-secondary);
+    margin-left: 8px; // 增加左边距
 
     &:hover {
       background-color: var(--bg-tertiary);
@@ -210,72 +221,72 @@ const handleLogout = async () => {
     }
   }
 
-  .sidebar-toggle-btn {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    background: none;
-    border: none;
-    border-radius: 10px;
-    color: var(--text-secondary);
-    cursor: pointer;
+  // Logo 区域样式
+  .logo-section {
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-right: auto; // 将右侧元素推到最右边
-    overflow: hidden;
+    width: 220px; // 固定宽度，不随侧栏变化
+    height: 100%; // 确保高度充满 Header
+    flex-shrink: 0;
+    background-color: var(--bg-primary); // 确保背景色不透明
 
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(circle, rgba(64, 158, 255, 0.1) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      width: 100%;
+      height: 100%;
+      padding-left: 20px;
+      overflow: hidden; // 防止溢出
 
-    &:hover {
-      background-color: var(--bg-tertiary);
-      color: var(--text-primary);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-      &::before {
-        opacity: 1;
-      }
-    }
-
-    &:active {
-      transform: translateY(0) scale(0.98);
-    }
-
-    &.collapsed {
-      // 折叠状态可以添加不同的视觉反馈
-      &::after {
-        content: '';
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        width: 6px;
-        height: 6px;
+      .logo-icon {
+        width: 32px;
+        height: 32px;
         background: var(--color-primary);
-        border-radius: 50%;
-        box-shadow: 0 0 8px rgba(64, 158, 255, 0.6);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-inverse);
+        flex-shrink: 0;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
       }
-    }
 
-    .el-icon {
-      font-size: 20px;
-      z-index: 1;
-      transition: transform 0.3s ease;
-    }
+      .logo-img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+      }
 
-    &:hover .el-icon {
-      transform: rotate(90deg);
+      .logo-text {
+        display: flex;
+        flex-direction: column;
+        transition: all var(--transition-normal);
+        white-space: nowrap;
+        opacity: 1;
+        transform: translateX(0);
+
+        .brand-name {
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-bold);
+          color: var(--text-primary);
+          line-height: 1.2;
+        }
+
+        .brand-subtitle {
+          font-size: var(--font-size-xs);
+          color: var(--text-secondary);
+          font-weight: var(--font-weight-medium);
+          text-transform: uppercase;
+          letter-spacing: 0.025em;
+        }
+      }
     }
   }
 

@@ -94,7 +94,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock, Monitor, Check, InfoFilled } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
 import { useSystemStore } from '@/stores/system'
 import { useUserStore } from '@/stores/user'
 
@@ -135,21 +135,23 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       try {
-        const response = await axios.post('http://localhost:8081/api/v1/auth/login', {
+        const response: any = await request.post('/auth/login', {
           username: loginForm.username,
           password: loginForm.password
         })
         
-        const { token, user } = response.data
+        const { token, user } = response
         
-        // 存储 token 和用户信息
-        localStorage.setItem('token', token)
+        // 存储 token 和用户信息 (使用 store action 确保响应式状态更新)
+        userStore.setToken(token)
         userStore.setUser(user)
         
         ElMessage.success('登录成功')
         router.push('/')
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.error || '登录失败，请检查网络或账号密码')
+        // request.ts 已经处理了部分错误，但这里保留 catch 以处理特定逻辑
+        // 注意：request.ts 拦截器 reject 了 promise，所以这里会捕获到
+        // 如果拦截器返回了 Promise.reject(error)，这里的 error 就是那个 error
       } finally {
         loading.value = false
       }
@@ -160,9 +162,9 @@ const handleLogin = async () => {
 const handleGuestLogin = async () => {
   guestLoading.value = true
   try {
-    const response = await axios.post('/api/v1/auth/guest-login')
+    const response: any = await request.post('/auth/guest-login')
     
-    const { token, user } = response.data
+    const { token, user } = response
     
     // 存储 token 和用户信息
     userStore.setToken(token)
@@ -171,7 +173,7 @@ const handleGuestLogin = async () => {
     ElMessage.success('游客登录成功')
     router.push('/')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.error || '游客登录失败')
+    // 错误由拦截器统一处理，这里只需要重置 loading
   } finally {
     guestLoading.value = false
   }

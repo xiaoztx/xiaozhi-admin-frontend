@@ -3,32 +3,7 @@
     class="admin-sidebar"
     :class="{ collapsed: isCollapsed, 'mobile-open': isMobileMenuOpen }"
   >
-    <!-- Logo区域 -->
-    <div class="sidebar-header">
-      <div class="logo-section">
-        <div class="logo-wrapper">
-          <div class="logo-icon" v-if="!logoUrl">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <img v-else :src="logoUrl" class="logo-img" alt="Logo" />
-          <div v-if="!isCollapsed" class="logo-text">
-            <div class="brand-name">{{ siteName }}</div>
-            <div class="brand-subtitle">Admin System</div>
-          </div>
-        </div>
-        <button
-          v-if="isMobile"
-          class="mobile-close-btn"
-          @click="closeMobileMenu"
-          aria-label="关闭菜单"
-        >
-          <el-icon><Close /></el-icon>
-        </button>
-      </div>
-
-    </div>
+    <!-- Logo区域 (已移动到 AdminHeader) -->
 
     <!-- 导航菜单 -->
     <nav class="sidebar-nav">
@@ -145,6 +120,21 @@
       </ul>
     </nav>
 
+    <!-- 侧栏折叠切换 (新增) -->
+    <div class="sidebar-toggle-wrapper" :class="{ 'collapsed': isCollapsed }">
+      <div 
+        class="nav-link cursor-pointer toggle-btn"
+        @click="toggleSidebar"
+        :title="isCollapsed ? '展开侧边栏' : '隐藏侧栏'"
+      >
+        <div class="nav-icon">
+          <el-icon v-if="isCollapsed"><Expand /></el-icon>
+          <el-icon v-else><Fold /></el-icon>
+        </div>
+        <span v-if="!isCollapsed" class="nav-label">隐藏侧栏</span>
+      </div>
+    </div>
+
     <!-- 底部信息 -->
     <div v-if="!isCollapsed" class="sidebar-footer">
       <div class="user-status">
@@ -172,7 +162,9 @@ import {
   Bell,
   Close,
   Cloudy,
-  Operation
+  Operation,
+  Fold,
+  Expand
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -184,8 +176,9 @@ const isCollapsed = computed(() => themeStore.isSidebarCollapsed)
 const isMobileMenuOpen = computed(() => themeStore.isMobileMenuOpen)
 const isMobile = computed(() => window.innerWidth <= 768)
 
-const siteName = computed(() => systemStore.siteName)
-const logoUrl = computed(() => systemStore.logoUrl)
+const toggleSidebar = () => {
+  themeStore.toggleSidebar()
+}
 
 // 菜单配置类型定义
 interface MenuItem {
@@ -362,7 +355,7 @@ const handleMouseLeave = () => {
 .admin-sidebar {
   position: relative;
   width: var(--sidebar-width);
-  height: 100vh;
+  height: 100%; // 修复: 改为100%以适应 flex 容器
   background: var(--bg-primary);
   border-right: 1px solid var(--border-light);
   display: flex;
@@ -624,10 +617,65 @@ const handleMouseLeave = () => {
   }
 }
 
+// 折叠切换按钮区域
+.sidebar-toggle-wrapper {
+  padding: 8px var(--space-2);
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light); // 新增下边框
+  
+  &.collapsed {
+    padding: 8px 0; // 折叠时移除水平内边距
+    
+    .toggle-btn {
+      justify-content: center;
+      padding: var(--space-2) 0;
+      
+      .nav-icon {
+        margin-right: 0;
+      }
+    }
+  }
+  
+  .toggle-btn {
+    display: flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    cursor: pointer; // 确保显示手型
+    user-select: none; // 防止文字被选中
+    
+    &:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: var(--space-2);
+      
+      .el-icon {
+        font-size: 16px;
+      }
+    }
+    
+    .nav-label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      white-space: nowrap; // 防止折叠时换行
+    }
+  }
+}
+
 // 侧边栏底部
 .sidebar-footer {
   padding: 16px 20px;
-  border-top: 1px solid var(--border-light);
+  // border-top: 1px solid var(--border-light); // 移除 border-top，因为上面已经有 toggle wrapper 了
 
   .user-status {
     display: flex;
@@ -750,8 +798,7 @@ const handleMouseLeave = () => {
 
 // 聚焦状态
 .nav-link:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none; // 移除聚焦边框
 }
 
 // 涟漪效果动画

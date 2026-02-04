@@ -1,25 +1,27 @@
 <template>
   <div class="admin-layout" :class="themeClass">
-    <!-- 侧边栏 -->
-    <AdminSidebar />
+    <!-- 头部导航 (全宽) -->
+    <AdminHeader />
 
-    <!-- 主内容区 -->
-    <div class="main-content">
-      <!-- 头部导航 -->
-      <AdminHeader />
-      
-      <!-- 标签页导航 -->
-      <TagsView />
+    <div class="body-container">
+      <!-- 侧边栏 -->
+      <AdminSidebar />
 
-      <!-- 页面内容 -->
-      <div class="content">
-        <router-view v-if="isRouterAlive" v-slot="{ Component }">
-          <transition name="fade-transform" mode="out-in">
-            <keep-alive :include="cachedViews">
-              <component :is="Component" />
-            </keep-alive>
-          </transition>
-        </router-view>
+      <!-- 主内容区 -->
+      <div class="main-content">
+        <!-- 标签页导航 -->
+        <TagsView />
+
+        <!-- 页面内容 -->
+        <div class="content">
+          <router-view v-if="isRouterAlive" v-slot="{ Component }">
+            <transition name="fade-transform" mode="out-in">
+              <keep-alive :include="cachedViews">
+                <component :is="Component" />
+              </keep-alive>
+            </transition>
+          </router-view>
+        </div>
       </div>
     </div>
 
@@ -70,7 +72,14 @@ onMounted(() => {
 .admin-layout {
   height: 100vh;
   display: flex;
+  flex-direction: column; // 改为垂直布局
   background-color: var(--bg-primary);
+
+  .body-container {
+    flex: 1;
+    display: flex;
+    overflow: hidden; // 防止溢出
+  }
 
   .main-content {
     flex: 1;

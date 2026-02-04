@@ -209,7 +209,7 @@ const registerRules = computed<FormRules>(() => {
   return rules
 })
 
-import axios from 'axios'
+import request from '@/utils/request'
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return
@@ -218,7 +218,7 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
       try {
-        await axios.post('http://localhost:8081/api/v1/auth/register', {
+        await request.post('/auth/register', {
           username: registerForm.username,
           password: registerForm.password,
           email: registerForm.email,
@@ -228,7 +228,7 @@ const handleRegister = async () => {
         ElMessage.success('注册成功，请登录')
         router.push('/login')
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.error || '注册失败，请稍后重试')
+        // request.ts handles errors
       } finally {
         loading.value = false
       }
